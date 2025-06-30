@@ -1,0 +1,55 @@
+{
+  "name": "claude-explorer",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "CLI tool for exploring and managing Claude Code settings and slash commands",
+  "author": "AI Assistant",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./scan": "./dist/commands/scan.js",
+    "./interactive": "./dist/commands/interactive.js",
+    "./preview": "./dist/commands/preview.js",
+    "./copy": "./dist/commands/copy.js"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": "./dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "start": "bun run ./src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "typecheck": "tsc --noEmit",
+    "check": "biome check .",
+    "check:unsafe": "biome check --write --unsafe .",
+    "check:write": "biome check --write .",
+    "ci": "bun run build && bun run check && bun run test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.0.6",
+    "@types/bun": "^1.2.17",
+    "cli-table3": "^0.6.5",
+    "consola": "^3.4.2",
+    "es-toolkit": "^1.39.5",
+    "fs-fixture": "^2.8.1",
+    "gunshi": "^0.26.3",
+    "path-type": "^6.0.0",
+    "picocolors": "^1.1.1",
+    "tinyglobby": "^0.2.14",
+    "ts-pattern": "^5.5.0",
+    "tsdown": "^0.12.9",
+    "type-fest": "^4.41.0",
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.4",
+    "xdg-basedir": "^5.1.0",
+    "zod": "^3.25.67"
+  }
+}
