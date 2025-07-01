@@ -43,7 +43,6 @@ Thumbs.db
 
 # Temporary files
 *.tmp
-/
 
 # Vive Coding
 CLAUDE.local.md
