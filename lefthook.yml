@@ -1,0 +1,9 @@
+# Lefthook configuration for claude-code-explorer
+# https://github.com/evilmartians/lefthook
+
+pre-commit:
+  commands:
+    ci:
+      run: bun run ci
+      fail_text: "Quality checks failed. Please fix the issues and try again."
+      stage_fixed: true
