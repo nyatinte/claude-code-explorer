@@ -17,7 +17,7 @@ export const parseSlashCommandName = (fileName: string): string => {
   return fileName.replace(/\.md$/, '').replace(/\//g, ':');
 };
 
-export const normalizeFilePath = (filePath: string): ClaudeFilePath => {
+const normalizeFilePath = (filePath: string): ClaudeFilePath => {
   const normalized = filePath.startsWith('~')
     ? filePath.replace('~', homedir())
     : filePath;
@@ -219,7 +219,7 @@ export interface SelectableItem {
   disabled?: boolean;
 }
 
-export interface SelectionOptions {
+interface SelectionOptions {
   title?: string;
   filterPlaceholder?: string;
   enableFilter?: boolean;

@@ -1,5 +1,5 @@
 // Shared CLI argument definitions for gunshi commands
-export const sharedArgs = {
+const _sharedArgs = {
   path: {
     type: 'string' as const,
     short: 'p',
@@ -30,7 +30,7 @@ export const sharedArgs = {
 
 // Command-specific argument sets
 export const scanArgs = {
-  ...sharedArgs,
+  ..._sharedArgs,
   includeHidden: {
     type: 'boolean' as const,
     short: 'h',
@@ -85,22 +85,22 @@ if (import.meta.vitest != null) {
 
   describe('sharedArgs', () => {
     test('should define common CLI arguments', () => {
-      expect(sharedArgs.path.type).toBe('string');
-      expect(sharedArgs.path.short).toBe('p');
-      expect(sharedArgs.recursive.type).toBe('boolean');
-      expect(sharedArgs.recursive.short).toBe('r');
+      expect(_sharedArgs.path.type).toBe('string');
+      expect(_sharedArgs.path.short).toBe('p');
+      expect(_sharedArgs.recursive.type).toBe('boolean');
+      expect(_sharedArgs.recursive.short).toBe('r');
     });
 
     test('should have proper descriptions', () => {
-      expect(sharedArgs.path.description).toContain('Path to search');
-      expect(sharedArgs.recursive.description).toContain('recursively');
-      expect(sharedArgs.output.description).toContain('Output format');
+      expect(_sharedArgs.path.description).toContain('Path to search');
+      expect(_sharedArgs.recursive.description).toContain('recursively');
+      expect(_sharedArgs.output.description).toContain('Output format');
     });
   });
 
   describe('scanArgs', () => {
     test('should include shared args and scan-specific args', () => {
-      expect(scanArgs.path).toBe(sharedArgs.path);
+      expect(scanArgs.path).toBe(_sharedArgs.path);
       expect(scanArgs.includeHidden.type).toBe('boolean');
       expect(scanArgs.includeHidden.short).toBe('h');
     });

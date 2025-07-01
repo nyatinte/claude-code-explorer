@@ -20,7 +20,7 @@ export const FILE_SIZE_LIMITS = {
 } as const;
 
 // CLI output configuration
-export const OUTPUT_CONFIG = {
+const _OUTPUT_CONFIG = {
   DEFAULT_TABLE_WIDTH: 120,
   MAX_DESCRIPTION_LENGTH: 80,
   MAX_PATH_LENGTH: 60,

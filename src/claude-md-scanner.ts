@@ -151,7 +151,7 @@ const processClaudeFile = async (
 };
 
 // Find Claude files in common locations
-export const findGlobalClaudeFiles = async (): Promise<ClaudeFileInfo[]> => {
+const _findGlobalClaudeFiles = async (): Promise<ClaudeFileInfo[]> => {
   const files: ClaudeFileInfo[] = [];
 
   for (const searchPath of DEFAULT_SEARCH_PATHS) {

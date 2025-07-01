@@ -182,7 +182,7 @@ export const findSlashCommandByName = async (
 };
 
 // Get all available slash commands grouped by namespace
-export const getSlashCommandsByNamespace = async (): Promise<
+const getSlashCommandsByNamespace = async (): Promise<
   Map<string, SlashCommandInfo[]>
 > => {
   const allCommands = await scanSlashCommands({ recursive: true });

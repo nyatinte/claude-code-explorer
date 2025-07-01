@@ -1,16 +1,16 @@
 import { z } from 'zod';
 
 // Branded types for type safety
-export const ClaudeFilePathBrand = Symbol('ClaudeFilePath');
-export type ClaudeFilePath = string & { readonly [ClaudeFilePathBrand]: true };
+const _ClaudeFilePathBrand = Symbol('ClaudeFilePath');
+export type ClaudeFilePath = string & { readonly [_ClaudeFilePathBrand]: true };
 
 // Zod schema for path validation
-export const ClaudeFilePathSchema = z
+const _ClaudeFilePathSchema = z
   .string()
   .refine((path) => path.length > 0, { message: 'Path must not be empty' });
 
 export const createClaudeFilePath = (path: string): ClaudeFilePath => {
-  ClaudeFilePathSchema.parse(path); // Validate the path
+  _ClaudeFilePathSchema.parse(path); // Validate the path
   return path as ClaudeFilePath;
 };
 
@@ -42,7 +42,7 @@ export type ProjectInfo = {
   readonly isIncomplete?: boolean | undefined;
 };
 
-export type CommandInfo = {
+type _CommandInfo = {
   readonly name: string;
   readonly description?: string | undefined;
   readonly hasArguments: boolean;
@@ -77,22 +77,22 @@ export type ScanOptions = {
 };
 
 // Output formats
-export type OutputFormat = 'table' | 'json';
+type _OutputFormat = 'table' | 'json';
 
 // CLI command context types
-export type ScanCommandArgs = {
+type _ScanCommandArgs = {
   readonly path?: string | undefined;
   readonly recursive?: boolean | undefined;
   readonly type?: ClaudeFileType | undefined;
   readonly output?: OutputFormat | undefined;
 };
 
-export type PreviewCommandArgs = {
+type _PreviewCommandArgs = {
   readonly filePath?: string | undefined;
   readonly command?: string | undefined;
 };
 
-export type CopyCommandArgs = {
+type _CopyCommandArgs = {
   readonly source: string;
   readonly to?: string | undefined;
   readonly clipboard?: boolean | undefined;
@@ -100,7 +100,7 @@ export type CopyCommandArgs = {
 };
 
 // Zod schemas for validation
-export const ScanOptionsSchema = z.object({
+const ScanOptionsSchema = z.object({
   path: z.string().optional(),
   recursive: z.boolean().optional(),
   type: z
@@ -115,7 +115,7 @@ export const ScanOptionsSchema = z.object({
   includeHidden: z.boolean().optional(),
 });
 
-export const OutputFormatSchema = z.enum(['table', 'json']);
+const OutputFormatSchema = z.enum(['table', 'json']);
 
 // InSource tests
 if (import.meta.vitest != null) {
