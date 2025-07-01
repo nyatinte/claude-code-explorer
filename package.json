@@ -52,5 +52,8 @@
     "vitest": "^3.2.4",
     "xdg-basedir": "^5.1.0",
     "zod": "^3.25.67"
+  },
+  "overrides": {
+    "vite": "npm:rolldown-vite@latest"
   }
 }

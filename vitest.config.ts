@@ -6,7 +6,4 @@ export default defineConfig({
     globals: true,
     environment: 'node',
   },
-  define: {
-    'import.meta.vitest': 'undefined',
-  },
 });
