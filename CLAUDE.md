@@ -189,6 +189,7 @@ bun run ci                    # Runs build + check + test in sequence
 - **Fix, don't disable**: Resolve lint errors rather than adding ignore comments
 - **Test coverage**: InSource tests required for all utility functions
 - **Error handling**: Graceful degradation with user-friendly error messages
+- **Type definitions**: Use `type` instead of `interface` for consistency and better type inference
 
 ### Development Workflow Integration
 

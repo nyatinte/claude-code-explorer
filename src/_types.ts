@@ -54,7 +54,7 @@ export type ClaudeFileInfo = {
   readonly size: number;
   readonly lastModified: Date;
   readonly projectInfo?: ProjectInfo | undefined;
-  readonly commands: CommandInfo[];
+  readonly commands: _CommandInfo[];
   readonly tags: string[];
 };
 
@@ -84,7 +84,7 @@ type _ScanCommandArgs = {
   readonly path?: string | undefined;
   readonly recursive?: boolean | undefined;
   readonly type?: ClaudeFileType | undefined;
-  readonly output?: OutputFormat | undefined;
+  readonly output?: _OutputFormat | undefined;
 };
 
 type _PreviewCommandArgs = {

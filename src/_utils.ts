@@ -213,18 +213,18 @@ export const formatDate = (date: Date): string => {
 };
 
 // Arrow key navigation utilities
-export interface SelectableItem {
+export type SelectableItem = {
   label: string;
   value: string;
   disabled?: boolean;
-}
+};
 
-interface SelectionOptions {
+type SelectionOptions = {
   title?: string;
   filterPlaceholder?: string;
   enableFilter?: boolean;
   maxDisplayItems?: number;
-}
+};
 
 export const selectWithArrows = async <T extends SelectableItem>(
   items: T[],
