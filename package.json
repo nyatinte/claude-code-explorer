@@ -31,7 +31,8 @@
     "check": "biome check .",
     "check:unsafe": "biome check --write --unsafe .",
     "check:write": "biome check --write .",
-    "ci": "bun run build && bun run check && bun run test"
+    "knip": "knip",
+    "ci": "bun run build && bun run check && bun run knip && bun run test"
   },
   "devDependencies": {
     "@biomejs/biome": "2.0.6",
@@ -41,6 +42,7 @@
     "es-toolkit": "^1.39.5",
     "fs-fixture": "^2.8.1",
     "gunshi": "^0.26.3",
+    "knip": "^5.61.3",
     "lefthook": "^1.11.14",
     "path-type": "^6.0.0",
     "picocolors": "^1.1.1",

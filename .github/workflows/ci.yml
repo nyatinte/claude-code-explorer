@@ -33,6 +33,9 @@ jobs:
       - name: Run type checking  
         run: bun run typecheck
         
+      - name: Check dependencies
+        run: bun run knip
+        
       - name: Run tests
         run: bun run test
         
