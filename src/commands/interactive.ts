@@ -73,8 +73,8 @@ const runInteractiveSession = async (startPath?: string) => {
     consola.start(pc.blue('🔍 Scanning...'));
 
     const [claudeFiles, slashCommands] = await Promise.all([
-      scanClaudeFiles({ path: currentPath, recursive: false }),
-      scanSlashCommands({ path: currentPath, recursive: false }),
+      scanClaudeFiles({ path: currentPath, recursive: true }),
+      scanSlashCommands({ path: currentPath, recursive: true }),
     ]);
 
     console.clear();

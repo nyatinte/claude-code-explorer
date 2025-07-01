@@ -46,7 +46,6 @@
     "lefthook": "^1.11.14",
     "path-type": "^6.0.0",
     "picocolors": "^1.1.1",
-    "tinyglobby": "^0.2.14",
     "ts-pattern": "^5.5.0",
     "tsdown": "^0.12.9",
     "type-fest": "^4.41.0",
@@ -57,5 +56,11 @@
   },
   "overrides": {
     "vite": "npm:rolldown-vite@latest"
-  }
+  },
+  "dependencies": {
+    "fdir": "^6.4.6"
+  },
+  "trustedDependencies": [
+    "fd-find"
+  ]
 }

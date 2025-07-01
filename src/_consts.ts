@@ -10,8 +10,7 @@ export const CLAUDE_FILE_PATTERNS = {
   USER_SLASH_COMMANDS: join(homedir(), '.claude', 'commands', '**', '*.md'),
 } as const;
 
-// Default search paths
-export const DEFAULT_SEARCH_PATHS = [process.cwd(), homedir()] as const;
+// Removed unused DEFAULT_SEARCH_PATHS
 
 // File size limits (in bytes)
 export const FILE_SIZE_LIMITS = {
@@ -91,15 +90,7 @@ if (import.meta.vitest != null) {
     });
   });
 
-  describe('DEFAULT_SEARCH_PATHS', () => {
-    test('should include current working directory', () => {
-      expect(DEFAULT_SEARCH_PATHS).toContain(process.cwd());
-    });
-
-    test('should include home directory', () => {
-      expect(DEFAULT_SEARCH_PATHS).toContain(homedir());
-    });
-  });
+  // Removed DEFAULT_SEARCH_PATHS tests (no longer exported)
 
   describe('FILE_SIZE_LIMITS', () => {
     test('should have reasonable size limits', () => {

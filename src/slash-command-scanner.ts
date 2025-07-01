@@ -2,11 +2,11 @@ import { existsSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
-import { glob } from 'tinyglobby';
 import { FILE_SIZE_LIMITS } from './_consts.ts';
 import type { ScanOptions, SlashCommandInfo } from './_types.ts';
 import { createClaudeFilePath } from './_types.ts';
 import { getFileScope, parseSlashCommandName } from './_utils.ts';
+import { fastScanner } from './fast-scanner.ts';
 
 export const scanSlashCommands = async (
   options: ScanOptions = {},
@@ -17,7 +17,7 @@ export const scanSlashCommands = async (
     includeHidden = false,
   } = options;
 
-  const patterns = getSlashCommandPatterns(recursive);
+  const _patterns = getSlashCommandPatterns(recursive);
   const searchPaths = [path, join(homedir(), '.claude', 'commands')];
 
   try {
@@ -28,11 +28,11 @@ export const scanSlashCommands = async (
         continue;
       }
 
-      const files = await glob(patterns, {
-        cwd: searchPath,
-        absolute: true,
-        dot: includeHidden,
-        ignore: ['node_modules/**', '.git/**'],
+      // Use fast scanner for better performance and security
+      const files = await fastScanner.findSlashCommands({
+        path: searchPath,
+        recursive,
+        includeHidden,
       });
 
       for (const filePath of files) {

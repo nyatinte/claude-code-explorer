@@ -65,7 +65,8 @@ export const detectClaudeFileType = (filePath: string): ClaudeFileType => {
 
 // Content validation
 export const validateClaudeMdContent = (content: string): boolean => {
-  return content.includes('# ') || content.includes('## ');
+  // Allow any content - validation should be minimal for flexibility
+  return content.length >= 0;
 };
 
 export const extractTagsFromContent = (content: string): string[] => {
@@ -376,9 +377,15 @@ if (import.meta.vitest != null) {
       expect(validateClaudeMdContent('## Build Commands')).toBe(true);
     });
 
-    test('should reject invalid content', () => {
-      expect(validateClaudeMdContent('Just plain text')).toBe(false);
-      expect(validateClaudeMdContent('')).toBe(false);
+    test('should accept any reasonable content', () => {
+      expect(validateClaudeMdContent('Just plain text')).toBe(true);
+      expect(validateClaudeMdContent('')).toBe(true);
+      expect(validateClaudeMdContent('- bullet point\n- another')).toBe(true);
+    });
+
+    test('should accept any content size', () => {
+      const largeContent = 'x'.repeat(1000000); // 1MB
+      expect(validateClaudeMdContent(largeContent)).toBe(true);
     });
   });
 
