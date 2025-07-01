@@ -6,7 +6,7 @@ import { FILE_SIZE_LIMITS } from './_consts.ts';
 import type { ScanOptions, SlashCommandInfo } from './_types.ts';
 import { createClaudeFilePath } from './_types.ts';
 import { getFileScope, parseSlashCommandName } from './_utils.ts';
-import { fastScanner } from './fast-scanner.ts';
+import { findSlashCommands } from './fast-scanner.ts';
 
 export const scanSlashCommands = async (
   options: ScanOptions = {},
@@ -29,7 +29,7 @@ export const scanSlashCommands = async (
       }
 
       // Use fast scanner for better performance and security
-      const files = await fastScanner.findSlashCommands({
+      const files = await findSlashCommands({
         path: searchPath,
         recursive,
         includeHidden,

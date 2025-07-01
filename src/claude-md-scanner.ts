@@ -16,7 +16,7 @@ import {
   extractTagsFromContent,
   validateClaudeMdContent,
 } from './_utils.ts';
-import { fastScanner } from './fast-scanner.ts';
+import { findClaudeFiles } from './fast-scanner.ts';
 
 export const scanClaudeFiles = async (
   options: ScanOptions = {},
@@ -29,7 +29,7 @@ export const scanClaudeFiles = async (
 
   try {
     // Scan specified path
-    const files = await fastScanner.findClaudeFiles({
+    const files = await findClaudeFiles({
       path,
       recursive,
       includeHidden,
@@ -42,7 +42,7 @@ export const scanClaudeFiles = async (
 
       // Only scan home directory if it's different from the current path
       if (globalPath !== path) {
-        const globalFiles = await fastScanner.findClaudeFiles({
+        const globalFiles = await findClaudeFiles({
           path: globalPath,
           recursive: true,
           includeHidden,
@@ -52,7 +52,7 @@ export const scanClaudeFiles = async (
     }
 
     // Remove duplicates based on file path
-    const uniqueFiles = Array.from(new Set(files));
+    const uniqueFiles: string[] = Array.from(new Set(files));
 
     // Process each file
     const fileInfos: ClaudeFileInfo[] = [];
