@@ -58,6 +58,7 @@
     "vite": "npm:rolldown-vite@latest"
   },
   "dependencies": {
+    "@inquirer/prompts": "^7.5.3",
     "fdir": "^6.4.6"
   },
   "trustedDependencies": [

@@ -2,15 +2,16 @@ import { consola } from 'consola';
 import { define } from 'gunshi';
 import pc from 'picocolors';
 import type { ClaudeFileInfo, SlashCommandInfo } from '../_types.ts';
-import {
-  formatDate,
-  getRelativePath,
-  type SelectableItem,
-  selectWithArrows,
-  truncateString,
-} from '../_utils.ts';
+import { formatDate, truncateString } from '../_utils.ts';
 import { scanClaudeFiles } from '../claude-md-scanner.ts';
 import { scanSlashCommands } from '../slash-command-scanner.ts';
+import {
+  createClaudeFileDescription,
+  createClaudeFileLabel,
+  createSlashCommandDescription,
+  createSlashCommandLabel,
+} from '../ui/components/index.ts';
+import { type SelectableItem, selectWithArrows } from '../ui/prompts/index.ts';
 
 export const interactiveCommand = define({
   name: 'interactive',
@@ -49,9 +50,7 @@ $ claude-explorer interactive --path ./projects`,
   },
 });
 
-const runInteractiveSession = async (startPath?: string) => {
-  let currentPath = startPath || process.cwd();
-
+const runInteractiveSession = async (_startPath?: string) => {
   while (true) {
     console.clear();
 
@@ -66,15 +65,13 @@ const runInteractiveSession = async (startPath?: string) => {
       pc.bold(pc.blue('╚══════════════════════════════════════════╝')),
     );
     console.log();
-    console.log(pc.gray(`📁 Current path: ${truncateString(currentPath, 60)}`));
-    console.log();
 
-    // Scan for files in current path
-    consola.start(pc.blue('🔍 Scanning...'));
+    // Scan for all files globally
+    consola.start(pc.blue('🔍 Scanning all locations...'));
 
     const [claudeFiles, slashCommands] = await Promise.all([
-      scanClaudeFiles({ path: currentPath, recursive: true }),
-      scanSlashCommands({ path: currentPath, recursive: true }),
+      scanClaudeFiles({ recursive: true }),
+      scanSlashCommands({ recursive: true }),
     ]);
 
     console.clear();
@@ -90,7 +87,11 @@ const runInteractiveSession = async (startPath?: string) => {
       pc.bold(pc.blue('╚══════════════════════════════════════════╝')),
     );
     console.log();
-    console.log(pc.gray(`📁 Current path: ${truncateString(currentPath, 60)}`));
+    console.log(
+      pc.gray(
+        `📊 Found: ${claudeFiles.length} Claude files, ${slashCommands.length} slash commands`,
+      ),
+    );
     console.log();
 
     // Show main menu
@@ -99,34 +100,20 @@ const runInteractiveSession = async (startPath?: string) => {
     switch (choice) {
       case 'claude':
         if (claudeFiles.length > 0) {
-          await handleClaudeFilesMenu(claudeFiles, currentPath);
+          await handleClaudeFilesMenu(claudeFiles);
         } else {
-          consola.warn(pc.yellow('No Claude files found in current directory'));
+          consola.warn(pc.yellow('No Claude files found'));
           await waitForKeyPress();
         }
         break;
 
       case 'slash':
         if (slashCommands.length > 0) {
-          await handleSlashCommandsMenu(slashCommands, currentPath);
+          await handleSlashCommandsMenu(slashCommands);
         } else {
-          consola.warn(
-            pc.yellow('No slash commands found in current directory'),
-          );
+          consola.warn(pc.yellow('No slash commands found'));
           await waitForKeyPress();
         }
-        break;
-
-      case 'search':
-        currentPath = await handleSearchMenu(currentPath);
-        break;
-
-      case 'change':
-        currentPath = await changeDirectory(currentPath);
-        break;
-
-      case 'scan-all':
-        await handleGlobalScan();
         break;
 
       case 'quit':
@@ -142,58 +129,53 @@ const showMainMenu = async (
 ): Promise<string> => {
   const options: SelectableItem[] = [
     {
-      label: `📋 CLAUDE.md files (${claudeCount} found)`,
+      label: '📋 CLAUDE.md files',
       value: 'claude',
       disabled: claudeCount === 0,
+      description: `${claudeCount} configuration files found`,
     },
     {
-      label: `⚡️ Slash commands (${slashCount} found)`,
+      label: '⚡ Slash commands',
       value: 'slash',
       disabled: slashCount === 0,
+      description: `${slashCount} commands available`,
     },
-    { label: '🔍 Search in other directories', value: 'search' },
-    { label: '📁 Change directory', value: 'change' },
-    { label: '🌍 Scan all locations', value: 'scan-all' },
-    { label: '❌ Quit', value: 'quit' },
+    {
+      label: '❌ Quit',
+      value: 'quit',
+      description: 'Exit Claude Explorer',
+    },
   ];
 
   const selected = await selectWithArrows(options, {
-    title: pc.bold(pc.cyan('❓ What would you like to explore?')),
+    title: 'What would you like to explore?',
     enableFilter: true,
-    filterPlaceholder: 'Filter options...',
+    enableSearch: true,
+    filterPlaceholder: 'Search options...',
   });
 
   return selected?.value || 'quit';
 };
 
-const handleClaudeFilesMenu = async (
-  files: ClaudeFileInfo[],
-  basePath: string,
-) => {
+const handleClaudeFilesMenu = async (files: ClaudeFileInfo[]) => {
   while (true) {
     const options: SelectableItem[] = files.map((file) => {
-      const relativePath = getRelativePath(file.path, basePath);
-      const framework = file.projectInfo?.framework
-        ? `[${file.projectInfo.framework}]`
-        : '';
-      const label = `${truncateString(relativePath, 50)} ${framework}\n   ${file.type} • ${formatDate(file.lastModified)}`;
-
       return {
-        label,
+        label: createClaudeFileLabel(file),
         value: file.path,
+        description: createClaudeFileDescription(file), // For search functionality
       };
     });
 
-    options.push({ label: '← Back to main menu', value: 'back' });
-
     const selected = await selectWithArrows(options, {
-      title: pc.bold(pc.blue('📋 Claude Configuration Files')),
+      title: '📋 Claude Configuration Files',
       enableFilter: true,
-      filterPlaceholder: 'Filter files...',
+      enableSearch: true,
+      filterPlaceholder: 'Search by name, type, or framework...',
     });
 
-    if (!selected || selected.value === 'back') {
-      break;
+    if (!selected) {
+      break; // Escape key pressed - return to main menu
     }
 
     const selectedFile = files.find((file) => file.path === selected.value);
@@ -203,37 +185,25 @@ const handleClaudeFilesMenu = async (
   }
 };
 
-const handleSlashCommandsMenu = async (
-  commands: SlashCommandInfo[],
-  _basePath: string,
-) => {
+const handleSlashCommandsMenu = async (commands: SlashCommandInfo[]) => {
   while (true) {
     const options: SelectableItem[] = commands.map((cmd) => {
-      const hasArgs = cmd.hasArguments ? '📝' : '○';
-      const scope = cmd.scope === 'user' ? '[user]' : '[project]';
-      const namespace = cmd.namespace ? `📦 ${cmd.namespace}: ` : '';
-      const description = cmd.description
-        ? `\n   ${truncateString(cmd.description, 60)}`
-        : '';
-
-      const label = `${namespace}${cmd.name} ${hasArgs} ${scope}${description}`;
-
       return {
-        label,
+        label: createSlashCommandLabel(cmd),
         value: cmd.filePath,
+        description: createSlashCommandDescription(cmd), // For search functionality
       };
     });
 
-    options.push({ label: '← Back to main menu', value: 'back' });
-
     const selected = await selectWithArrows(options, {
-      title: pc.bold(pc.blue('⚡️ Slash Commands')),
+      title: '⚡ Slash Commands',
       enableFilter: true,
-      filterPlaceholder: 'Filter commands...',
+      enableSearch: true,
+      filterPlaceholder: 'Search by name, namespace, or scope...',
     });
 
-    if (!selected || selected.value === 'back') {
-      break;
+    if (!selected) {
+      break; // Escape key pressed - return to main menu
     }
 
     const selectedCommand = commands.find(
@@ -415,86 +385,6 @@ const openDirectory = async (filePath: string) => {
   const { dirname } = await import('node:path');
   const dir = dirname(filePath);
   consola.info(pc.cyan(`📂 Directory: ${dir}`));
-  await waitForKeyPress();
-};
-
-const handleSearchMenu = async (currentPath: string): Promise<string> => {
-  return new Promise((resolve) => {
-    console.clear();
-    console.log(pc.bold(pc.blue('🔍 Search in Directory')));
-    console.log(pc.gray(`Current: ${currentPath}`));
-    console.log();
-    console.log('Enter path to search (or press Enter for current): ');
-
-    const stdin = process.stdin;
-    stdin.resume();
-    stdin.setEncoding('utf8');
-
-    stdin.once('data', (data) => {
-      const input = data.toString().trim();
-      resolve(input || currentPath);
-    });
-  });
-};
-
-const changeDirectory = async (currentPath: string): Promise<string> => {
-  return new Promise((resolve) => {
-    console.clear();
-    console.log(pc.bold(pc.blue('📁 Change Directory')));
-    console.log(pc.gray(`Current: ${currentPath}`));
-    console.log();
-    console.log('Enter new path (or press Enter to cancel): ');
-
-    const stdin = process.stdin;
-    stdin.resume();
-    stdin.setEncoding('utf8');
-
-    stdin.once('data', async (data) => {
-      const input = data.toString().trim();
-      if (input) {
-        const { existsSync } = await import('node:fs');
-        if (existsSync(input)) {
-          resolve(input);
-        } else {
-          consola.error(pc.red('Directory does not exist'));
-          await waitForKeyPress();
-          resolve(currentPath);
-        }
-      } else {
-        resolve(currentPath);
-      }
-    });
-  });
-};
-
-const handleGlobalScan = async () => {
-  console.clear();
-  consola.start(pc.blue('🌍 Scanning all locations...'));
-
-  const [claudeFiles, slashCommands] = await Promise.all([
-    scanClaudeFiles({ recursive: true }),
-    scanSlashCommands({ recursive: true }),
-  ]);
-
-  console.clear();
-  console.log(pc.bold(pc.blue('🌍 Global Scan Results')));
-  console.log();
-  console.log(`${pc.green('📋 Claude files:')} ${claudeFiles.length}`);
-  console.log(`${pc.yellow('⚡️ Slash commands:')} ${slashCommands.length}`);
-  console.log();
-
-  // Show top 10 results
-  console.log(pc.bold(pc.cyan('📋 Recent Claude files:')));
-  for (const file of claudeFiles.slice(0, 10)) {
-    const relativePath = getRelativePath(file.path);
-    console.log(`  ${pc.green('•')} ${truncateString(relativePath, 60)}`);
-  }
-
-  if (claudeFiles.length > 10) {
-    console.log(`  ${pc.gray(`... and ${claudeFiles.length - 10} more`)}`);
-  }
-
-  console.log();
   await waitForKeyPress();
 };
 
