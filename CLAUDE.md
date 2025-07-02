@@ -42,10 +42,12 @@ bun run ci                    # Full CI pipeline (build + check + test)
 - **Build**: tsdown (Rolldown/Oxc) → produces shebang executable
 - **Testing**: vitest (InSource Testing + globals)
 - **Linting**: Biome (v2.0.6) with strict rules
+- **Dependency Management**: knip for unused dependency detection
 - **File Operations**: tinyglobby + node:fs/promises
 - **Pattern Matching**: ts-pattern for complex conditional logic
 - **Validation**: zod + branded types for runtime type safety
 - **UI**: picocolors + consola for beautiful CLI output
+- **Interactive Prompts**: @inquirer/prompts for fzf-style search and navigation
 
 ### Directory Structure
 
@@ -53,9 +55,20 @@ bun run ci                    # Full CI pipeline (build + check + test)
 src/
 ├── commands/           # CLI commands (gunshi pattern)
 │   ├── scan.ts        # File scanning
-│   ├── interactive.ts # Interactive mode
+│   ├── interactive.ts # Interactive mode with search
 │   ├── preview.ts     # File preview
 │   └── copy.ts        # File copying
+├── ui/                # User interface components
+│   ├── components/    # Reusable UI components
+│   │   ├── file-display.ts # File labeling and display
+│   │   └── index.ts   # Component exports
+│   ├── prompts/       # Interactive prompts
+│   │   ├── enhanced-select.ts # fzf-style search select
+│   │   └── index.ts   # Prompt exports
+│   └── themes/        # Theming and styling
+│       ├── capabilities.ts # Terminal capability detection
+│       ├── colors.ts  # Color theme management
+│       └── index.ts   # Theme exports
 ├── _types.ts          # Type definitions (including branded types)
 ├── _utils.ts          # Utility functions + InSource tests
 ├── _consts.ts         # Constants
@@ -113,8 +126,20 @@ src/
      return match([fileName, dirPath])
        .with(['CLAUDE.md', P._], () => 'claude-md' as const)
        .with(['CLAUDE.local.md', P._], () => 'claude-local-md' as const)
-       .otherwise(() => 'unknown' as const); // Default changed from 'claude-md'
+       .otherwise(() => 'unknown' as const);
    };
+   ```
+
+5. **Interactive UI with Search**: nr-like experience with fzf-style search
+
+   ```typescript
+   // Enhanced select with search functionality
+   const selected = await selectWithArrows(options, {
+     title: 'Claude Configuration Files',
+     enableFilter: true,
+     enableSearch: true,
+     filterPlaceholder: 'Search by name, type, or framework...',
+   });
    ```
 
 ### Data Flow Architecture
@@ -144,17 +169,20 @@ The tool automatically discovers these file types:
 
 ### Testing Philosophy
 
-- **InSource Testing**: Tests live with source code (90 tests across 11 files)
+- **InSource Testing**: Tests live with source code (142 tests across 20 files)
 - **fs-fixture**: File system test fixtures for reliable testing
 - **vitest globals**: `describe`/`test`/`expect` available without imports
 - **No test shortcuts**: All quality checks must pass before completion
+- **Comprehensive coverage**: All UI components, utilities, and business logic tested
 
 ### CLI User Experience
 
 - **Default behavior**: Interactive mode when no command specified
 - **Subcommands**: `scan`, `preview`, `copy`, `interactive`
 - **JSON output**: `--output json` for programmatic usage
-- **Rich UI**: Table views, colored output, progress indicators
+- **Rich UI**: Table views, colored output, progress indicators, fzf-style search
+- **Navigation**: ESC key support for returning to previous menus
+- **Search functionality**: Type-ahead filtering for files and commands
 - **Error handling**: User-friendly messages with debug mode support
 
 ## Quality Management Rules
@@ -166,30 +194,45 @@ The tool automatically discovers these file types:
 ```bash
 # Complete pipeline (run in sequence)
 bun run typecheck              # TypeScript: 0 errors required
-bun run check:write           # Biome: Auto-fix + 0 errors required  
-bun run test                  # Tests: 100% pass rate required (90/90)
+bun run check:write           # Biome: Auto-fix + 0 errors required
+bun run knip                  # Dependency cleanup: 0 unused items required  
+bun run test                  # Tests: 100% pass rate required (142/142)
 bun run build                 # Build: Must complete without errors
 ```
 
 **Alternative single command:**
 ```bash
-bun run ci                    # Runs build + check + test in sequence
+bun run ci                    # Runs build + check + knip + test in sequence
 ```
 
 ### Quality Standards (Zero Tolerance)
 
 - **TypeScript**: 0 type errors (strict mode enforced)
 - **Biome**: 0 lint/format errors (style rules strictly enforced)
-- **Tests**: 100% pass rate (90/90 tests across 11 files)
+- **Knip**: 0 unused dependencies, exports, or types (clean dependency management)
+- **Tests**: 100% pass rate (142/142 tests across 20 files)
 - **Build**: Clean tsdown build to dist/ with executable permissions
 
 ### Implementation Rules
 
 - **No shortcuts**: Never skip quality checks or claim completion with failing tests
-- **Fix, don't disable**: Resolve lint errors rather than adding ignore comments
+- **No flag shortcuts**: NEVER use `-n` or similar flags to skip quality checks
+- **Fix, don't disable**: Resolve lint errors rather than adding ignore comments  
 - **Test coverage**: InSource tests required for all utility functions
 - **Error handling**: Graceful degradation with user-friendly error messages
-- **Type definitions**: Use `type` instead of `interface` for consistency and better type inference
+- **Dependency management**: Keep dependencies clean - remove unused imports and exports immediately
+
+### TypeScript Coding Standards (Strictly Enforced)
+
+- **Type definitions**: ALWAYS use `type` instead of `interface` for consistency and better type inference
+- **Function definitions**:
+  - **Components**: Use `function` declaration syntax
+  - **Regular functions**: Use arrow function syntax
+- **Exports**: Avoid `default export` except for page components
+- **Type safety**: 
+  - NEVER use `any` type - it is strictly forbidden
+  - Avoid `as` type assertions - use proper type guards instead
+- **Code organization**: Follow established patterns in the codebase for consistency
 
 ### Development Workflow Integration
 
