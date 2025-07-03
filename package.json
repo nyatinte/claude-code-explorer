@@ -37,6 +37,8 @@
   "devDependencies": {
     "@biomejs/biome": "2.0.6",
     "@types/bun": "^1.2.17",
+    "@types/marked-terminal": "^6.1.1",
+    "@types/prompts": "^2.4.9",
     "cli-table3": "^0.6.5",
     "consola": "^3.4.2",
     "es-toolkit": "^1.39.5",
@@ -58,8 +60,12 @@
     "vite": "npm:rolldown-vite@latest"
   },
   "dependencies": {
-    "@inquirer/prompts": "^7.5.3",
-    "fdir": "^6.4.6"
+    "clipboardy": "^4.0.0",
+    "fdir": "^6.4.6",
+    "marked": "^16.0.0",
+    "marked-terminal": "^7.3.0",
+    "open": "^10.1.2",
+    "prompts": "^2.4.2"
   },
   "trustedDependencies": [
     "fd-find"

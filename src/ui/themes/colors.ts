@@ -93,65 +93,6 @@ const colorize = {
 } as const;
 
 // Icon definitions with Unicode fallbacks
-type IconSet = {
-  readonly check: string;
-  readonly cross: string;
-  readonly arrow: string;
-  readonly folder: string;
-  readonly file: string;
-  readonly search: string;
-  readonly loading: string;
-  readonly warning: string;
-  readonly info: string;
-  readonly success: string;
-  readonly error: string;
-};
-
-const createIconSet = (hasUnicode: boolean): IconSet => {
-  if (!hasUnicode) {
-    return {
-      check: '✓',
-      cross: '✗',
-      arrow: '>',
-      folder: 'DIR',
-      file: 'FILE',
-      search: '?',
-      loading: '...',
-      warning: '!',
-      info: 'i',
-      success: '+',
-      error: 'X',
-    };
-  }
-
-  return {
-    check: '✅',
-    cross: '❌',
-    arrow: '→',
-    folder: '📁',
-    file: '📄',
-    search: '🔍',
-    loading: '⏳',
-    warning: '⚠️',
-    info: 'ℹ️',
-    success: '✅',
-    error: '❌',
-  };
-};
-
-let _iconSet: IconSet | null = null;
-
-export const getIconSet = (): IconSet => {
-  if (_iconSet === null) {
-    const capabilities = getTerminalCapabilities();
-    _iconSet = createIconSet(capabilities.unicode);
-  }
-  return _iconSet;
-};
-
-const resetIconSet = (): void => {
-  _iconSet = null;
-};
 
 if (import.meta.vitest != null) {
   const { describe, test, expect, beforeEach, vi } = import.meta.vitest;
@@ -159,7 +100,6 @@ if (import.meta.vitest != null) {
   describe('color theme', () => {
     beforeEach(() => {
       resetColorTheme();
-      resetIconSet();
       vi.clearAllMocks();
     });
 
@@ -187,27 +127,6 @@ if (import.meta.vitest != null) {
       const theme1 = getColorTheme();
       const theme2 = getColorTheme();
       expect(theme1).toBe(theme2);
-    });
-  });
-
-  describe('icon set', () => {
-    test('should create unicode icons when terminal supports it', () => {
-      // Test with actual terminal capabilities instead of mocking
-      const icons = getIconSet();
-      expect(typeof icons.check).toBe('string');
-      expect(typeof icons.folder).toBe('string');
-      expect(icons.check.length).toBeGreaterThan(0);
-      expect(icons.folder.length).toBeGreaterThan(0);
-    });
-
-    test('should create fallback icons when terminal does not support unicode', () => {
-      vi.mock('./capabilities.ts', () => ({
-        getTerminalCapabilities: () => ({ color: false, unicode: false }),
-      }));
-
-      const icons = getIconSet();
-      expect(icons.check).toBe('✓');
-      expect(icons.folder).toBe('DIR');
     });
   });
 

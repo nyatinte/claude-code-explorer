@@ -2,6 +2,9 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { consola } from 'consola';
 import { define } from 'gunshi';
+// Enhanced markdown rendering
+import { marked } from 'marked';
+import TerminalRenderer from 'marked-terminal';
 import pc from 'picocolors';
 import { previewArgs } from '../_shared-args.ts';
 import { formatDate, formatFileSize } from '../_utils.ts';
@@ -50,7 +53,7 @@ $ claude-explorer preview --file-path ./CLAUDE.md --lines 100`,
   },
 });
 
-const previewFile = async (filePath: string, maxLines = 50) => {
+export const previewFile = async (filePath: string, maxLines = 50) => {
   if (!existsSync(filePath)) {
     consola.error(pc.red(`❌ File not found: ${filePath}`));
     process.exit(1);
@@ -73,23 +76,25 @@ const previewFile = async (filePath: string, maxLines = 50) => {
     console.log(`Modified: ${pc.cyan(formatDate(stats.mtime))}`);
     console.log(`Lines: ${pc.magenta(lines.length.toString())}`);
 
-    // Display content
+    // Display content with enhanced markdown rendering
     console.log(pc.bold(pc.blue('\n📝 Content:')));
     console.log(pc.gray('─'.repeat(80)));
 
-    const displayLines = lines.slice(0, maxLines);
-    const lineNumberWidth = Math.max(3, displayLines.length.toString().length);
+    // Check if it's a markdown file for enhanced rendering
+    const isMarkdownFile = filePath.toLowerCase().endsWith('.md');
 
-    for (let i = 0; i < displayLines.length; i++) {
-      const lineNum = (i + 1).toString().padStart(lineNumberWidth, ' ');
-      const line = displayLines[i] || '';
-      console.log(`${pc.gray(lineNum)} │ ${highlightMarkdown(line)}`);
-    }
-
-    if (lines.length > maxLines) {
-      console.log(pc.gray('─'.repeat(80)));
-      console.log(pc.yellow(`... and ${lines.length - maxLines} more lines`));
-      console.log(pc.dim(`Use --lines ${lines.length} to see all content`));
+    if (isMarkdownFile && lines.length <= maxLines) {
+      // For markdown files within size limit, use full enhanced rendering
+      try {
+        const renderedContent = highlightMarkdown(content, true);
+        console.log(renderedContent);
+      } catch (_error) {
+        // Fallback to line-by-line rendering
+        renderLineByLine(lines, maxLines);
+      }
+    } else {
+      // For non-markdown or large files, use line-by-line rendering
+      renderLineByLine(lines, maxLines);
     }
 
     console.log(pc.gray('─'.repeat(80)));
@@ -162,52 +167,97 @@ const previewSlashCommand = async (commandName: string, maxLines = 50) => {
   }
 };
 
-const highlightMarkdown = (line: string): string => {
-  // Simple markdown syntax highlighting
-  let highlighted = line;
+const renderLineByLine = (lines: string[], maxLines: number) => {
+  const displayLines = lines.slice(0, maxLines);
+  const lineNumberWidth = Math.max(3, displayLines.length.toString().length);
 
-  // Headers
-  if (line.startsWith('# ')) {
-    return pc.bold(pc.blue(line));
-  }
-  if (line.startsWith('## ')) {
-    return pc.bold(pc.green(line));
-  }
-  if (line.startsWith('### ')) {
-    return pc.bold(pc.yellow(line));
+  for (let i = 0; i < displayLines.length; i++) {
+    const lineNum = (i + 1).toString().padStart(lineNumberWidth, ' ');
+    const line = displayLines[i] || '';
+    console.log(`${pc.gray(lineNum)} │ ${highlightMarkdown(line)}`);
   }
 
-  // Code blocks
-  if (line.startsWith('```')) {
-    return pc.gray(line);
+  if (lines.length > maxLines) {
+    console.log(pc.gray('─'.repeat(80)));
+    console.log(pc.yellow(`... and ${lines.length - maxLines} more lines`));
+    console.log(pc.dim(`Use --lines ${lines.length} to see all content`));
   }
+};
 
-  // Inline code
-  highlighted = highlighted.replace(/`([^`]+)`/g, (_, code) =>
-    pc.cyan(`\`${code}\``),
-  );
+const highlightMarkdown = (content: string, isFullContent = false): string => {
+  try {
+    // For full content, use marked-terminal for rich rendering
+    if (isFullContent) {
+      marked.setOptions({
+        renderer: new TerminalRenderer({
+          // CLI-optimized colors
+          heading: pc.bold,
+          strong: pc.bold,
+          em: pc.italic,
+          codespan: pc.cyan,
+          code: pc.gray,
+          blockquote: pc.gray,
+          html: pc.gray,
+          href: pc.blue,
+          text: (text: string) => text,
+          unescape: true,
+          width: 80, // Limit width for better CLI display
+          reflowText: true,
+        }),
+      });
 
-  // Bold text
-  highlighted = highlighted.replace(/\*\*([^*]+)\*\*/g, (_, text) =>
-    pc.bold(text),
-  );
+      return marked(content);
+    }
 
-  // Italic text
-  highlighted = highlighted.replace(/\*([^*]+)\*/g, (_, text) =>
-    pc.italic(text),
-  );
+    // For single lines, keep simple highlighting for performance
+    let highlighted = content;
 
-  // Links
-  highlighted = highlighted.replace(/\[([^\]]+)\]\([^)]+\)/g, (_, text) =>
-    pc.underline(pc.blue(text)),
-  );
+    // Headers
+    if (content.startsWith('# ')) {
+      return pc.bold(pc.blue(content));
+    }
+    if (content.startsWith('## ')) {
+      return pc.bold(pc.green(content));
+    }
+    if (content.startsWith('### ')) {
+      return pc.bold(pc.yellow(content));
+    }
 
-  // Slash commands
-  highlighted = highlighted.replace(/\/(\w+)/g, (_, cmd) =>
-    pc.magenta(`/${cmd}`),
-  );
+    // Code blocks
+    if (content.startsWith('```')) {
+      return pc.gray(content);
+    }
 
-  return highlighted;
+    // Inline code
+    highlighted = highlighted.replace(/`([^`]+)`/g, (_, code) =>
+      pc.cyan(`\`${code}\``),
+    );
+
+    // Bold text
+    highlighted = highlighted.replace(/\*\*([^*]+)\*\*/g, (_, text) =>
+      pc.bold(text),
+    );
+
+    // Italic text
+    highlighted = highlighted.replace(/\*([^*]+)\*/g, (_, text) =>
+      pc.italic(text),
+    );
+
+    // Links
+    highlighted = highlighted.replace(/\[([^\]]+)\]\([^)]+\)/g, (_, text) =>
+      pc.underline(pc.blue(text)),
+    );
+
+    // Slash commands
+    highlighted = highlighted.replace(/\/(\w+)/g, (_, cmd) =>
+      pc.magenta(`/${cmd}`),
+    );
+
+    return highlighted;
+  } catch (_error) {
+    // Fallback to original content if highlighting fails
+    return content;
+  }
 };
 
 const showContentAnalysis = async (content: string, _filePath: string) => {

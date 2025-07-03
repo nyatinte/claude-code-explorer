@@ -16,11 +16,11 @@ export const getTerminalCapabilities = (): TerminalCapabilities => {
   // Color support detection
   const supportsColor = stdout.isTTY && process.env.COLORTERM !== 'dumb';
 
-  // Unicode support detection
+  // Unicode support detection (assume modern terminals support UTF-8)
   const supportsUnicode =
     (process.env.LANG?.includes('UTF-8') ?? false) ||
-    process.platform === 'win32' ||
-    (process.env.TERM?.includes('xterm') ?? false);
+    (process.env.TERM?.includes('xterm') ?? false) ||
+    true; // Modern terminals generally support Unicode
 
   // Terminal size detection
   const terminalSize = stdout.getWindowSize?.() || [80, 24];

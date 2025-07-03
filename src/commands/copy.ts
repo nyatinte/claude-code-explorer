@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
+import clipboardy from 'clipboardy';
 import { consola } from 'consola';
 import { define } from 'gunshi';
 import pc from 'picocolors';
@@ -143,54 +144,13 @@ const extractSection = (
   return lines.slice(sectionStart, sectionEnd).join('\n');
 };
 
-const copyToClipboard = async (
+export const copyToClipboard = async (
   content: string,
   sourcePath: string,
   section?: string,
 ) => {
   try {
-    // Try to use system clipboard
-    const { spawn } = await import('node:child_process');
-
-    // Detect platform and use appropriate command
-    const platform = process.platform;
-    let clipboardCommand: string[];
-
-    switch (platform) {
-      case 'darwin':
-        clipboardCommand = ['pbcopy'];
-        break;
-      case 'linux':
-        clipboardCommand = ['xclip', '-selection', 'clipboard'];
-        break;
-      case 'win32':
-        clipboardCommand = ['clip'];
-        break;
-      default:
-        throw new Error(`Clipboard not supported on platform: ${platform}`);
-    }
-
-    const command = clipboardCommand[0];
-    if (!command) {
-      throw new Error('No clipboard command available');
-    }
-    const proc = spawn(command, clipboardCommand.slice(1), {
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-
-    proc.stdin.write(content);
-    proc.stdin.end();
-
-    await new Promise((resolve, reject) => {
-      proc.on('close', (code) => {
-        if (code === 0) {
-          resolve(void 0);
-        } else {
-          reject(new Error(`Clipboard command failed with code ${code}`));
-        }
-      });
-      proc.on('error', reject);
-    });
+    await clipboardy.write(content);
 
     const sourceFile = basename(sourcePath);
     const sectionInfo = section ? ` (section: ${section})` : '';
@@ -214,7 +174,7 @@ const copyToClipboard = async (
   }
 };
 
-const copyToFile = async (
+export const copyToFile = async (
   content: string,
   sourcePath: string,
   destination: string,
