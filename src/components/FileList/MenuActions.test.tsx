@@ -1,6 +1,6 @@
 import { render } from 'ink-testing-library';
 import { createMockFile } from '../../test-helpers.js';
-import { MenuActions } from './MenuActions.js';
+import { MenuActions } from './MenuActions/index.js';
 
 if (import.meta.vitest) {
   const { describe, test, expect, vi } = import.meta.vitest;

@@ -5,7 +5,7 @@ import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import type { ClaudeFileInfo } from '../../_types.js';
 import { FileItem } from './FileItem.js';
-import { MenuActions } from './MenuActions.js';
+import { MenuActions } from './MenuActions/index.js';
 
 type FileListProps = {
   readonly files: ClaudeFileInfo[];
