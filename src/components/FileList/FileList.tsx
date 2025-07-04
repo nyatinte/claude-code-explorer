@@ -58,87 +58,93 @@ export function FileList({
   }, [currentIndex, filteredFiles, onFileSelect]);
 
   // キーボード操作
-  useInput((input, key) => {
-    if (!isFocused || isSearchFocused || isMenuMode) return;
+  useInput(
+    (_input, key) => {
+      // 検索フィールドフォーカス中は処理しない
+      if (isSearchFocused) return;
 
-    if (key.escape) {
-      process.exit(0);
-      return;
-    }
-
-    if (key.tab) {
-      setIsSearchFocused(true);
-      return;
-    }
-
-    // Spaceキーでメニューモード切り替え
-    if (input === ' ') {
-      setIsMenuMode(true);
-      return;
-    }
-
-    // ファイルナビゲーション
-    if (key.upArrow) {
-      setCurrentIndex((prev) => Math.max(0, prev - 1));
-    } else if (key.downArrow) {
-      setCurrentIndex((prev) => Math.min(filteredFiles.length - 1, prev + 1));
-    } else if (key.return) {
-      const selectedFile = filteredFiles[currentIndex];
-      if (selectedFile) {
-        onFileSelect(selectedFile);
+      if (key.escape) {
+        process.exit(0);
+        return;
       }
-    }
-  });
 
-  // メニューモードの場合はMenuActionsを表示
-  if (isMenuMode && filteredFiles[currentIndex]) {
-    return (
-      <MenuActions
-        file={filteredFiles[currentIndex]}
-        onClose={() => setIsMenuMode(false)}
-      />
-    );
-  }
+      if (key.tab) {
+        setIsSearchFocused(true);
+        return;
+      }
+
+      // ファイルナビゲーション
+      if (key.upArrow) {
+        setCurrentIndex((prev) => Math.max(0, prev - 1));
+      } else if (key.downArrow) {
+        setCurrentIndex((prev) => Math.min(filteredFiles.length - 1, prev + 1));
+      } else if (key.return) {
+        // Enterキーでメニューモード切り替え
+        if (filteredFiles[currentIndex]) {
+          setIsMenuMode(true);
+        }
+      }
+    },
+    { isActive: !isMenuMode },
+  );
 
   return (
     <Box flexDirection="column" height="100%">
-      {/* ヘッダー */}
+      {/* ヘッダー - 常に表示 */}
       <Box marginBottom={1}>
         <Text bold color="cyan">
-          Claude Files ({filteredFiles.length})
+          Claude Files ({isMenuMode ? files.length : filteredFiles.length})
         </Text>
       </Box>
 
-      {/* 検索入力 */}
+      {/* 検索入力 - メニューモード時は無効化 */}
       <Box marginBottom={1}>
         <TextInput
           placeholder="Type to filter files..."
           defaultValue={searchQuery}
           onChange={setSearchQuery}
-          onSubmit={() => setIsSearchFocused(false)}
+          onSubmit={() => {
+            setIsSearchFocused(false);
+          }}
+          isDisabled={isMenuMode}
         />
       </Box>
 
-      {/* ファイル一覧 */}
-      <Box flexDirection="column" flexGrow={1}>
-        {filteredFiles.length === 0 ? (
-          <Text dimColor>No files found</Text>
-        ) : (
-          filteredFiles.map((file, index) => (
-            <FileItem
-              key={file.path}
-              file={file}
-              isSelected={index === currentIndex}
-              isFocused={index === currentIndex && isFocused}
-            />
-          ))
-        )}
+      {/* ファイル一覧 - メニューモード時は非表示だが存在 */}
+      <Box
+        flexDirection="column"
+        flexGrow={1}
+        height={isMenuMode ? 0 : undefined}
+      >
+        {!isMenuMode &&
+          (filteredFiles.length === 0 ? (
+            <Text dimColor>No files found</Text>
+          ) : (
+            filteredFiles.map((file, index) => (
+              <FileItem
+                key={`${file.path}-${index}`}
+                file={file}
+                isSelected={index === currentIndex}
+                isFocused={index === currentIndex && isFocused && !isMenuMode}
+              />
+            ))
+          ))}
       </Box>
 
-      {/* フッター */}
+      {/* メニューアクション - メニューモード時のみ表示 */}
+      {isMenuMode && filteredFiles[currentIndex] && (
+        <Box flexGrow={1}>
+          <MenuActions
+            file={filteredFiles[currentIndex]}
+            onClose={() => setIsMenuMode(false)}
+          />
+        </Box>
+      )}
+
+      {/* フッター - 常に表示 */}
       <Box marginTop={1} borderStyle="single" borderTop={true}>
         <Text dimColor>
-          ↑↓: Navigate | Enter: Select | Space: Menu | Tab: Search | Esc: Exit
+          ↑↓: Navigate | Enter: Menu | Tab: Search | Esc: Exit
         </Text>
       </Box>
     </Box>

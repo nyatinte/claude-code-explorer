@@ -1,5 +1,5 @@
 import { dirname, resolve } from 'node:path';
-import { Box, Text, useFocus, useInput } from 'ink';
+import { Box, Text, useInput } from 'ink';
 import type React from 'react';
 import { useState } from 'react';
 import type { ClaudeFileInfo } from '../../_types.js';
@@ -23,12 +23,12 @@ export function MenuActions({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isExecuting, setIsExecuting] = useState(false);
   const [message, setMessage] = useState('');
-  const { isFocused } = useFocus({ autoFocus: true });
 
   const copyToClipboard = async (text: string): Promise<void> => {
     try {
-      const { writeText } = await import('clipboardy');
-      await writeText(text);
+      // clipboardy v4.0.0では default export の write 関数を使用
+      const { default: clipboardy } = await import('clipboardy');
+      await clipboardy.write(text);
     } catch (error) {
       throw new Error(`Failed to copy to clipboard: ${error}`);
     }
@@ -117,30 +117,36 @@ export function MenuActions({
     }
   };
 
-  useInput(async (input, key) => {
-    if (!isFocused || isExecuting) return;
+  useInput(
+    async (input, key) => {
+      if (isExecuting) return;
 
-    if (key.escape) {
-      onClose();
-      return;
-    }
-
-    if (key.upArrow) {
-      setSelectedIndex((prev) => Math.max(0, prev - 1));
-    } else if (key.downArrow) {
-      setSelectedIndex((prev) => Math.min(actions.length - 1, prev + 1));
-    } else if (key.return) {
-      await executeAction(actions[selectedIndex]);
-    } else if (input) {
-      // キーボードショートカット
-      const action = actions.find(
-        (a) => a.key.toLowerCase() === input.toLowerCase(),
-      );
-      if (action) {
-        await executeAction(action);
+      if (key.escape) {
+        onClose();
+        return;
       }
-    }
-  });
+
+      if (key.upArrow) {
+        setSelectedIndex((prev) => Math.max(0, prev - 1));
+      } else if (key.downArrow) {
+        setSelectedIndex((prev) => Math.min(actions.length - 1, prev + 1));
+      } else if (key.return) {
+        const action = actions[selectedIndex];
+        if (action) {
+          await executeAction(action);
+        }
+      } else if (input) {
+        // キーボードショートカット
+        const action = actions.find(
+          (a) => a.key.toLowerCase() === input.toLowerCase(),
+        );
+        if (action) {
+          await executeAction(action);
+        }
+      }
+    },
+    { isActive: true },
+  );
 
   return (
     <Box flexDirection="column" borderStyle="single" padding={1}>
@@ -160,8 +166,10 @@ export function MenuActions({
         {actions.map((action, index) => (
           <Box key={action.key}>
             <Text
-              backgroundColor={index === selectedIndex ? 'blue' : undefined}
-              color={index === selectedIndex ? 'white' : undefined}
+              {...(index === selectedIndex && {
+                backgroundColor: 'blue',
+                color: 'white',
+              })}
             >
               {index === selectedIndex ? '► ' : '  '}[{action.key.toUpperCase()}
               ] {action.label}
