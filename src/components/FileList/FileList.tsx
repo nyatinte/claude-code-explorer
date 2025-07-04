@@ -61,7 +61,7 @@ export function FileList({
   useInput(
     (_input, key) => {
       // 検索フィールドフォーカス中は処理しない
-      if (isSearchFocused) return;
+      if (isSearchFocused || isMenuMode) return;
 
       if (key.escape) {
         process.exit(0);
@@ -85,7 +85,7 @@ export function FileList({
         }
       }
     },
-    { isActive: !isMenuMode },
+    { isActive: isFocused && !isMenuMode && !isSearchFocused },
   );
 
   return (
@@ -106,6 +106,8 @@ export function FileList({
           onSubmit={() => {
             setIsSearchFocused(false);
           }}
+          onFocus={() => setIsSearchFocused(true)}
+          onBlur={() => setIsSearchFocused(false)}
           isDisabled={isMenuMode}
         />
       </Box>
