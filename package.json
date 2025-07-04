@@ -29,7 +29,7 @@
     "check:write": "biome check --write .",
     "check:unsafe": "biome check --write --unsafe .",
     "knip": "knip",
-    "ci": "bun run build && bun run check && bun run knip && bun run test"
+    "ci": "bun run build && bun run check && bun run typecheck && bun run knip && bun run test"
   },
   "devDependencies": {
     "@biomejs/biome": "2.0.6",
