@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-**claude-explorer** - CLI tool for exploring and managing Claude Code settings and slash commands. The tool scans for CLAUDE.md files and slash commands in projects, providing interactive exploration and file management capabilities.
+**claude-explorer** - React Ink-based CLI tool for exploring and managing Claude Code settings and slash commands. The tool provides an interactive terminal UI for file navigation, content preview, and file management operations.
 
 ## Core Commands
 
@@ -26,11 +26,9 @@ bun run check:unsafe          # Biome unsafe auto-fix
 bun run ci                    # Full CI pipeline (build + check + test)
 
 # CLI Usage
-./dist/index.js               # Default: interactive mode
-./dist/index.js scan          # Scan for Claude files
-./dist/index.js preview       # Preview file contents
-./dist/index.js copy          # Copy files/sections
-./dist/index.js interactive   # Explicit interactive mode
+./dist/index.js               # Interactive React Ink TUI mode
+bun run start                 # Development mode with hot reload
+bun run dev                   # Development mode with watch
 ```
 
 ## Technical Architecture
@@ -38,44 +36,41 @@ bun run ci                    # Full CI pipeline (build + check + test)
 ### Main Tech Stack
 
 - **Runtime**: Bun + Node.js (>= 20) - ESM only
-- **CLI Framework**: gunshi (Type-safe CLI command definition)
+- **React TUI Framework**: React Ink (v6) for terminal UI components
+- **UI Components**: @inkjs/ui for enhanced terminal components (TextInput, Spinner, StatusMessage)
 - **Build**: tsdown (Rolldown/Oxc) → produces shebang executable
-- **Testing**: vitest (InSource Testing + globals)
+- **Testing**: vitest (InSource Testing + globals) + ink-testing-library
 - **Linting**: Biome (v2.0.6) with strict rules
 - **Dependency Management**: knip for unused dependency detection
-- **File Operations**: tinyglobby + node:fs/promises
+- **File Operations**: fdir for fast directory scanning + node:fs/promises
 - **Pattern Matching**: ts-pattern for complex conditional logic
 - **Validation**: zod + branded types for runtime type safety
-- **UI**: picocolors + consola for beautiful CLI output
-- **Interactive Prompts**: @inquirer/prompts for fzf-style search and navigation
+- **System Integration**: open, clipboardy for file operations
 
 ### Directory Structure
 
 ```sh
 src/
-├── commands/           # CLI commands (gunshi pattern)
-│   ├── scan.ts        # File scanning
-│   ├── interactive.ts # Interactive mode with search
-│   ├── preview.ts     # File preview
-│   └── copy.ts        # File copying
-├── ui/                # User interface components
-│   ├── components/    # Reusable UI components
-│   │   ├── file-display.ts # File labeling and display
-│   │   └── index.ts   # Component exports
-│   ├── prompts/       # Interactive prompts
-│   │   ├── enhanced-select.ts # fzf-style search select
-│   │   └── index.ts   # Prompt exports
-│   └── themes/        # Theming and styling
-│       ├── capabilities.ts # Terminal capability detection
-│       ├── colors.ts  # Color theme management
-│       └── index.ts   # Theme exports
+├── components/        # React Ink UI components
+│   ├── FileList/      # File navigation and menu
+│   │   ├── FileList.tsx      # Main file list with search
+│   │   ├── FileItem.tsx      # Individual file item
+│   │   ├── MenuActions.tsx   # File action menu
+│   │   └── *.test.tsx        # Component tests
+│   ├── Layout/        # Layout components
+│   │   ├── SplitPane.tsx     # Two-pane layout
+│   │   └── *.test.tsx        # Layout tests
+│   └── Preview/       # Content preview
+│       ├── Preview.tsx       # File preview pane
+│       └── MarkdownPreview.tsx # Markdown renderer
+├── hooks/             # React hooks
+│   ├── useFileNavigation.tsx # File scanning and state
+│   └── index.ts       # Hook exports
 ├── _types.ts          # Type definitions (including branded types)
-├── _utils.ts          # Utility functions + InSource tests
-├── _consts.ts         # Constants
-├── _shared-args.ts    # Common CLI parameters
 ├── claude-md-scanner.ts    # CLAUDE.md file scanner
 ├── slash-command-scanner.ts # Slash command scanner
-└── index.ts           # Entry point
+├── App.tsx            # Main React application
+└── index.tsx          # Entry point with React Ink render
 ```
 
 ### Core Architecture Patterns
@@ -107,16 +102,23 @@ src/
    };
    ```
 
-3. **Gunshi Command Architecture**: Modular CLI with type-safe arguments
+3. **React Ink Component Architecture**: React-based terminal UI
 
    ```typescript
-   export const scanCommand = define({
-     name: 'scan',
-     args: sharedArgs, // Reusable argument schemas
-     run: async (ctx) => {
-       const { path, recursive, type } = ctx.values; // Fully typed
-     }
-   });
+   export function FileList({ files, onFileSelect }: FileListProps) {
+     const [currentIndex, setCurrentIndex] = useState(0);
+     const [isMenuMode, setIsMenuMode] = useState(false);
+     
+     useInput((input, key) => {
+       // Handle keyboard navigation
+     }, { isActive: !isMenuMode });
+     
+     return (
+       <Box flexDirection="column">
+         {/* File list UI */}
+       </Box>
+     );
+   }
    ```
 
 4. **Pattern Matching for File Type Detection**: 
@@ -130,25 +132,30 @@ src/
    };
    ```
 
-5. **Interactive UI with Search**: nr-like experience with fzf-style search
+5. **React Ink Focus Management**: Proper input handling with `isActive` pattern
 
    ```typescript
-   // Enhanced select with search functionality
-   const selected = await selectWithArrows(options, {
-     title: 'Claude Configuration Files',
-     enableFilter: true,
-     enableSearch: true,
-     filterPlaceholder: 'Search by name, type, or framework...',
-   });
+   // FileList component
+   useInput((input, key) => {
+     if (key.upArrow) setCurrentIndex(prev => Math.max(0, prev - 1));
+     if (key.downArrow) setCurrentIndex(prev => Math.min(files.length - 1, prev + 1));
+     if (key.return) setIsMenuMode(true);
+   }, { isActive: !isMenuMode });
+   
+   // MenuActions component
+   useInput((input, key) => {
+     if (key.escape) onClose();
+     // Handle menu actions
+   }, { isActive: true });
    ```
 
 ### Data Flow Architecture
 
 - **Scanners**: `claude-md-scanner.ts` + `slash-command-scanner.ts` → discover files
 - **Type System**: `_types.ts` → branded types + zod schemas for data integrity  
-- **Commands**: Modular commands in `commands/` → process user requests
-- **Utils**: `_utils.ts` → shared utilities with comprehensive InSource tests
-- **Constants**: `_consts.ts` → centralized magic strings and configuration
+- **React State**: `useFileNavigation` hook → file loading and selection state
+- **Components**: React Ink components → interactive terminal UI
+- **File Operations**: clipboard, file opening via system integrations
 
 ### Target File Discovery
 
@@ -169,21 +176,23 @@ The tool automatically discovers these file types:
 
 ### Testing Philosophy
 
-- **InSource Testing**: Tests live with source code (142 tests across 20 files)
+- **InSource Testing**: Tests live with source code for component co-location
 - **fs-fixture**: File system test fixtures for reliable testing
+- **ink-testing-library**: React Ink component testing utilities
 - **vitest globals**: `describe`/`test`/`expect` available without imports
 - **No test shortcuts**: All quality checks must pass before completion
-- **Comprehensive coverage**: All UI components, utilities, and business logic tested
+- **Comprehensive coverage**: React components, hooks, and business logic tested
 
-### CLI User Experience
+### React Ink User Experience
 
-- **Default behavior**: Interactive mode when no command specified
-- **Subcommands**: `scan`, `preview`, `copy`, `interactive`
-- **JSON output**: `--output json` for programmatic usage
-- **Rich UI**: Table views, colored output, progress indicators, fzf-style search
-- **Navigation**: ESC key support for returning to previous menus
-- **Search functionality**: Type-ahead filtering for files and commands
-- **Error handling**: User-friendly messages with debug mode support
+- **Interactive TUI**: Full-screen terminal interface with React Ink
+- **Split-pane layout**: File list on left, preview on right
+- **Keyboard navigation**: Arrow keys, Enter, ESC, Tab for navigation
+- **Search functionality**: Live filtering with TextInput component
+- **File actions**: Copy content, copy paths, open files via context menu
+- **Focus management**: `isActive` pattern prevents input conflicts
+- **Error handling**: StatusMessage component with graceful degradation
+- **Loading states**: Spinner component during file scanning
 
 ## Quality Management Rules
 
@@ -210,7 +219,7 @@ bun run ci                    # Runs build + check + knip + test in sequence
 - **TypeScript**: 0 type errors (strict mode enforced)
 - **Biome**: 0 lint/format errors (style rules strictly enforced)
 - **Knip**: 0 unused dependencies, exports, or types (clean dependency management)
-- **Tests**: 100% pass rate (142/142 tests across 20 files)
+- **Tests**: 100% pass rate for all React components and business logic
 - **Build**: Clean tsdown build to dist/ with executable permissions
 
 ### Implementation Rules

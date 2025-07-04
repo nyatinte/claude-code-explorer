@@ -174,7 +174,7 @@ const hasCommandArguments = (content: string): boolean => {
 };
 
 // Find slash commands by name
-export const findSlashCommandByName = async (
+const findSlashCommandByName = async (
   commandName: string,
 ): Promise<SlashCommandInfo | null> => {
   const allCommands = await scanSlashCommands({ recursive: true });
