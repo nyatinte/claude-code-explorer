@@ -1,6 +1,5 @@
 import { homedir } from 'node:os';
-import { basename, dirname, join, relative } from 'node:path';
-import { consola } from 'consola';
+import { basename, dirname, join } from 'node:path';
 import { match, P } from 'ts-pattern';
 import {
   ERROR_MESSAGES,
@@ -28,13 +27,6 @@ const normalizeFilePath = (filePath: string): ClaudeFilePath => {
   }
 
   return claudePath;
-};
-
-export const getRelativePath = (
-  filePath: string,
-  basePath: string = process.cwd(),
-): string => {
-  return relative(basePath, filePath);
 };
 
 export const getFileScope = (filePath: string): 'project' | 'user' => {
@@ -169,49 +161,19 @@ export const analyzeProjectInfo = async (
         }
       } catch (error) {
         // Log parsing errors in debug mode
-        consola.debug(ERROR_MESSAGES.PACKAGE_JSON_PARSE_ERROR, error);
+        console.debug(ERROR_MESSAGES.PACKAGE_JSON_PARSE_ERROR, error);
         projectInfo = { ...projectInfo, isIncomplete: true };
       }
     }
 
     return projectInfo;
   } catch (error) {
-    consola.debug('Failed to analyze project info:', error);
+    console.debug('Failed to analyze project info:', error);
     return { isIncomplete: true };
   }
 };
 
 // String utilities
-export const truncateString = (str: string, maxLength: number): string => {
-  return str.length > maxLength ? `${str.slice(0, maxLength - 3)}...` : str;
-};
-
-export const formatFileSize = (bytes: number): string => {
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let size = bytes;
-  let unitIndex = 0;
-
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
-
-  const unit = units[unitIndex];
-  if (!unit) {
-    throw new Error('Invalid unit index');
-  }
-  return `${size.toFixed(1)} ${unit}`;
-};
-
-export const formatDate = (date: Date): string => {
-  return date.toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
 
 // InSource tests
 if (import.meta.vitest != null) {
@@ -298,36 +260,6 @@ if (import.meta.vitest != null) {
 
     test('should detect project scope for non-home files', () => {
       expect(getFileScope('/project/CLAUDE.md')).toBe('project');
-    });
-  });
-
-  describe('truncateString', () => {
-    test('should truncate long strings', () => {
-      expect(truncateString('This is a very long string', 10)).toBe(
-        'This is...',
-      );
-    });
-
-    test('should not truncate short strings', () => {
-      expect(truncateString('Short', 10)).toBe('Short');
-    });
-  });
-
-  describe('formatFileSize', () => {
-    test('should format bytes correctly', () => {
-      expect(formatFileSize(1024)).toBe('1.0 KB');
-      expect(formatFileSize(1048576)).toBe('1.0 MB');
-      expect(formatFileSize(500)).toBe('500.0 B');
-    });
-  });
-
-  describe('formatDate', () => {
-    test('should format date in Japanese locale', () => {
-      const date = new Date('2023-12-25T10:30:00');
-      const formatted = formatDate(date);
-      expect(formatted).toMatch(/2023/);
-      expect(formatted).toMatch(/12/);
-      expect(formatted).toMatch(/25/);
     });
   });
 

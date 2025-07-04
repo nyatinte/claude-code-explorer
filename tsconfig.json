@@ -16,8 +16,17 @@
     "declaration": true,
     "declarationMap": true,
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
   },
-  "include": ["src/**/*", "src/vitest.d.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/vitest.d.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.backup",
+    "src/commands.backup/**/*",
+    "src/ui/prompts/**/*",
+    "src/ui/interactive-pager/**/*"
+  ]
 }

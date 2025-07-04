@@ -9,11 +9,7 @@
     "node": ">=20"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./scan": "./dist/commands/scan.js",
-    "./interactive": "./dist/commands/interactive.js",
-    "./preview": "./dist/commands/preview.js",
-    "./copy": "./dist/commands/copy.js"
+    ".": "./dist/index.js"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -24,30 +20,29 @@
   ],
   "scripts": {
     "build": "tsdown",
-    "start": "bun run ./src/index.ts",
+    "start": "bun run ./src/index.tsx",
+    "dev": "bun run ./src/index.tsx --watch",
     "test": "vitest run",
     "test:watch": "vitest --watch",
     "typecheck": "tsc --noEmit",
     "check": "biome check .",
-    "check:unsafe": "biome check --write --unsafe .",
     "check:write": "biome check --write .",
+    "check:unsafe": "biome check --write --unsafe .",
     "knip": "knip",
     "ci": "bun run build && bun run check && bun run knip && bun run test"
   },
   "devDependencies": {
     "@biomejs/biome": "2.0.6",
+    "@inkjs/ui": "^2.0.0",
     "@types/bun": "^1.2.17",
     "@types/marked-terminal": "^6.1.1",
-    "@types/prompts": "^2.4.9",
-    "cli-table3": "^0.6.5",
-    "consola": "^3.4.2",
+    "@types/react": "^19.1.8",
     "es-toolkit": "^1.39.5",
     "fs-fixture": "^2.8.1",
-    "gunshi": "^0.26.3",
+    "ink-testing-library": "^4.0.0",
     "knip": "^5.61.3",
     "lefthook": "^1.11.14",
     "path-type": "^6.0.0",
-    "picocolors": "^1.1.1",
     "ts-pattern": "^5.5.0",
     "tsdown": "^0.12.9",
     "type-fest": "^4.41.0",
@@ -62,10 +57,11 @@
   "dependencies": {
     "clipboardy": "^4.0.0",
     "fdir": "^6.4.6",
+    "ink": "^6.0.1",
     "marked": "^16.0.0",
     "marked-terminal": "^7.3.0",
     "open": "^10.1.2",
-    "prompts": "^2.4.2"
+    "react": "^19.1.0"
   },
   "trustedDependencies": [
     "fd-find"
