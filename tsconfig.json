@@ -13,20 +13,15 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "skipLibCheck": true,
+    "noEmit": true,
     "declaration": true,
     "declarationMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "jsx": "react-jsx",
-    "jsxImportSource": "react"
+    "jsxImportSource": "react",
+    "types": ["vitest/globals"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/vitest.d.ts"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "src/**/*.backup",
-    "src/commands.backup/**/*",
-    "src/ui/prompts/**/*",
-    "src/ui/interactive-pager/**/*"
-  ]
+  "exclude": ["node_modules", "dist"]
 }

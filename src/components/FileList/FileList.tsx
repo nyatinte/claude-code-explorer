@@ -106,8 +106,6 @@ export function FileList({
           onSubmit={() => {
             setIsSearchFocused(false);
           }}
-          onFocus={() => setIsSearchFocused(true)}
-          onBlur={() => setIsSearchFocused(false)}
           isDisabled={isMenuMode}
         />
       </Box>

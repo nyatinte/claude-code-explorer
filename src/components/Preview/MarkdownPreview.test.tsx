@@ -170,7 +170,7 @@ HTML entities: &amp; &lt; &gt; &quot;`;
 
       expect(lastFrame()).toContain('Title with');
       expect(lastFrame()).toContain('quotes');
-      expect(lastFrame()).toContain('brackets');
+      expect(lastFrame()).toContain('symbols');
       expect(lastFrame()).toContain('Special characters');
     });
 

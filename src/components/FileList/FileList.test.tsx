@@ -367,7 +367,7 @@ if (import.meta.vitest) {
 
         expect(lastFrame()).toContain('Claude Files (50)');
         // レンダリングが完了することを確認
-        expect(lastFrame().length).toBeGreaterThan(0);
+        expect(lastFrame()?.length ?? 0).toBeGreaterThan(0);
       });
     });
 
@@ -413,7 +413,7 @@ if (import.meta.vitest) {
 
         // エラーなくレンダリングされることを確認
         expect(lastFrame()).toContain('Claude Files (3)');
-        expect(lastFrame().length).toBeGreaterThan(0);
+        expect(lastFrame()?.length ?? 0).toBeGreaterThan(0);
       });
     });
   });

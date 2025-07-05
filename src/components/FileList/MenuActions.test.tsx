@@ -104,11 +104,13 @@ if (import.meta.vitest) {
       const output = lastFrame();
 
       // アクションが正しい順序で表示されていることを確認
-      const copyContentIndex = output.indexOf('[C] Copy Content');
-      const copyAbsoluteIndex = output.indexOf('[P] Copy Path (Absolute)');
-      const copyRelativeIndex = output.indexOf('[R] Copy Path (Relative)');
-      const copyDirIndex = output.indexOf('[D] Copy Current Directory');
-      const openFileIndex = output.indexOf('[O] Open File');
+      const copyContentIndex = output?.indexOf('[C] Copy Content') ?? -1;
+      const copyAbsoluteIndex =
+        output?.indexOf('[P] Copy Path (Absolute)') ?? -1;
+      const copyRelativeIndex =
+        output?.indexOf('[R] Copy Path (Relative)') ?? -1;
+      const copyDirIndex = output?.indexOf('[D] Copy Current Directory') ?? -1;
+      const openFileIndex = output?.indexOf('[O] Open File') ?? -1;
 
       expect(copyContentIndex).toBeGreaterThan(-1);
       expect(copyAbsoluteIndex).toBeGreaterThan(copyContentIndex);

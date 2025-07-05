@@ -27,9 +27,10 @@ export const createMockSlashCommand = (
   overrides: Partial<SlashCommandInfo> = {},
 ): SlashCommandInfo => ({
   name,
+  scope: 'project',
   description: `Test command: ${name}`,
   hasArguments: false,
-  filePath: `/.claude/commands/${name}.md`,
+  filePath: createClaudeFilePath(`/.claude/commands/${name}.md`),
   lastModified: new Date('2024-01-01'),
   namespace: undefined,
   ...overrides,

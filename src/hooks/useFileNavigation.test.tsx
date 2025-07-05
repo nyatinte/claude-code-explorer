@@ -1,6 +1,7 @@
 import { Text } from 'ink';
 import { render } from 'ink-testing-library';
 import type { ClaudeFileInfo, SlashCommandInfo } from '../_types.js';
+import { createClaudeFilePath } from '../_types.js';
 import { scanClaudeFiles } from '../claude-md-scanner.js';
 import { scanSlashCommands } from '../slash-command-scanner.js';
 import { createMockFile, createMockSlashCommand } from '../test-helpers.js';
@@ -54,7 +55,9 @@ if (import.meta.vitest) {
 
       const slashCommands: SlashCommandInfo[] = [
         createMockSlashCommand('m-command', {
-          filePath: '/project/.claude/commands/m-command.md',
+          filePath: createClaudeFilePath(
+            '/project/.claude/commands/m-command.md',
+          ),
         }),
       ];
 
@@ -142,7 +145,7 @@ if (import.meta.vitest) {
         description: 'Deploy to production',
         hasArguments: true,
         namespace: 'production',
-        filePath: '/.claude/commands/deploy.md',
+        filePath: createClaudeFilePath('/.claude/commands/deploy.md'),
       });
 
       mockedScanClaudeFiles.mockResolvedValue([]);
@@ -159,7 +162,7 @@ if (import.meta.vitest) {
     test('namespace がない SlashCommand の変換', async () => {
       const slashCommand = createMockSlashCommand('test', {
         namespace: undefined,
-        filePath: '/.claude/commands/test.md',
+        filePath: createClaudeFilePath('/.claude/commands/test.md'),
       });
 
       mockedScanClaudeFiles.mockResolvedValue([]);
@@ -204,10 +207,10 @@ if (import.meta.vitest) {
 
       const slashCommands: SlashCommandInfo[] = [
         createMockSlashCommand('deploy', {
-          filePath: '/project/.claude/commands/deploy.md',
+          filePath: createClaudeFilePath('/project/.claude/commands/deploy.md'),
         }),
         createMockSlashCommand('test', {
-          filePath: '/project/.claude/commands/test.md',
+          filePath: createClaudeFilePath('/project/.claude/commands/test.md'),
         }),
       ];
 

@@ -209,9 +209,9 @@ if (import.meta.vitest) {
         '/project/CLAUDE.md',
         {
           projectInfo: {
-            name: 'My Project',
-            version: '1.0.0',
-            description: 'Test project',
+            framework: 'React',
+            language: 'TypeScript',
+            buildCommands: ['bun run build'],
           },
         },
       );
@@ -239,7 +239,7 @@ if (import.meta.vitest) {
       // rerender後の表示状態を確認（実装の詳細に依存しないように修正）
       const output = lastFrame();
       expect(output).toBeDefined();
-      expect(output.length).toBeGreaterThan(0);
+      expect(output?.length ?? 0).toBeGreaterThan(0);
     });
 
     test('undefinedファイルから有効ファイルへの切り替え', () => {
