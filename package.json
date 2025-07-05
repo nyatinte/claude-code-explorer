@@ -3,8 +3,12 @@
   "type": "module",
   "version": "1.0.0",
   "description": "CLI tool for exploring and managing Claude Code settings and slash commands",
-  "author": "AI Assistant",
+  "author": "nyatinte <takumi.062757@gmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nyatinte/claude-code-explorer.git"
+  },
   "engines": {
     "node": ">=20"
   },
