@@ -60,6 +60,7 @@
   },
   "dependencies": {
     "clipboardy": "^4.0.0",
+    "commander": "^14.0.0",
     "fdir": "^6.4.6",
     "ink": "^6.0.1",
     "marked": "^16.0.0",

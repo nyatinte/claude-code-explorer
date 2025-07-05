@@ -79,6 +79,13 @@ export type ScanOptions = {
 // Output formats
 type _OutputFormat = 'table' | 'json';
 
+// CLI argument types
+export type CliOptions = {
+  readonly help?: boolean | undefined;
+  readonly version?: boolean | undefined;
+  readonly path?: string | undefined;
+};
+
 // CLI command context types
 type _ScanCommandArgs = {
   readonly path?: string | undefined;

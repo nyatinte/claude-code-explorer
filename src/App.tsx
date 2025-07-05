@@ -1,18 +1,19 @@
 import { Spinner, StatusMessage } from '@inkjs/ui';
 import { Box, Text } from 'ink';
 import type React from 'react';
+import type { CliOptions } from './_types.js';
 import { FileList } from './components/FileList/index.js';
 import { SplitPane } from './components/Layout/index.js';
 import { Preview } from './components/Preview/index.js';
 import { useFileNavigation } from './hooks/index.js';
 
 type AppProps = {
-  readonly args?: string[];
+  readonly cliOptions: CliOptions;
 };
 
-export function App({ args: _args = [] }: AppProps): React.JSX.Element {
+export function App({ cliOptions }: AppProps): React.JSX.Element {
   const { files, selectedFile, isLoading, error, selectFile } =
-    useFileNavigation();
+    useFileNavigation({ path: cliOptions.path });
 
   // エラー状態
   if (error) {

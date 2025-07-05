@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import type { ClaudeFileInfo, SlashCommandInfo } from '../_types.js';
+import type {
+  ClaudeFileInfo,
+  ScanOptions,
+  SlashCommandInfo,
+} from '../_types.js';
 import { scanClaudeFiles } from '../claude-md-scanner.js';
 import { scanSlashCommands } from '../slash-command-scanner.js';
 
@@ -33,7 +37,9 @@ type UseFileNavigationReturn = {
   selectFile: (file: NavigationFile) => void;
 };
 
-export function useFileNavigation(): UseFileNavigationReturn {
+export function useFileNavigation(
+  options: ScanOptions = {},
+): UseFileNavigationReturn {
   const [files, setFiles] = useState<NavigationFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<
     NavigationFile | undefined
@@ -43,10 +49,8 @@ export function useFileNavigation(): UseFileNavigationReturn {
 
   useEffect(() => {
     // ファイルスキャン実行
-    Promise.all([
-      scanClaudeFiles({ recursive: true }),
-      scanSlashCommands({ recursive: true }),
-    ])
+    const scanOptions = { recursive: true, ...options };
+    Promise.all([scanClaudeFiles(scanOptions), scanSlashCommands(scanOptions)])
       .then(([claudeFiles, slashCommands]) => {
         // スラッシュコマンドをClaudeFileInfo形式に変換
         const convertedCommands = slashCommands.map(
@@ -77,7 +81,7 @@ export function useFileNavigation(): UseFileNavigationReturn {
         setError(err.message || 'Failed to scan files');
         setIsLoading(false);
       });
-  }, []);
+  }, [options]);
 
   const selectFile = (file: NavigationFile): void => {
     setSelectedFile(file);
