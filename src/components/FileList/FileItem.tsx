@@ -1,7 +1,7 @@
 import { basename } from 'node:path';
 import { Badge } from '@inkjs/ui';
 import { Box, Text } from 'ink';
-import type React from 'react';
+import React from 'react';
 import type { ClaudeFileInfo } from '../../_types.js';
 
 type FileItemProps = {
@@ -10,7 +10,7 @@ type FileItemProps = {
   readonly isFocused: boolean;
 };
 
-export function FileItem({
+export const FileItem = React.memo(function FileItem({
   file,
   isSelected,
   isFocused,
@@ -79,4 +79,4 @@ export function FileItem({
       </Box>
     </Box>
   );
-}
+});

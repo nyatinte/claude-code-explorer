@@ -1,8 +1,7 @@
 import { basename } from 'node:path';
 import { TextInput } from '@inkjs/ui';
 import { Box, Text, useFocus, useInput } from 'ink';
-import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { ClaudeFileInfo } from '../../_types.js';
 import { FileItem } from './FileItem.js';
 import { MenuActions } from './MenuActions/index.js';
@@ -13,7 +12,7 @@ type FileListProps = {
   readonly selectedFile?: ClaudeFileInfo | undefined;
 };
 
-export function FileList({
+const FileList = React.memo(function FileList({
   files,
   onFileSelect,
   selectedFile: _selectedFile,
@@ -150,4 +149,6 @@ export function FileList({
       </Box>
     </Box>
   );
-}
+});
+
+export { FileList };

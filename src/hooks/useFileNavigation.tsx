@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type {
   ClaudeFileInfo,
   ScanOptions,
@@ -83,9 +83,9 @@ export function useFileNavigation(
       });
   }, [options]);
 
-  const selectFile = (file: NavigationFile): void => {
+  const selectFile = useCallback((file: NavigationFile): void => {
     setSelectedFile(file);
-  };
+  }, []);
 
   return {
     files,
