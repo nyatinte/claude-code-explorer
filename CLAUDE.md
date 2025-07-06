@@ -15,7 +15,7 @@ bun run build                   # Build for production (outputs to dist/)
 bun run typecheck              # TypeScript type checking
 
 # Testing (InSource Testing Pattern)
-bun run test                   # Run all tests (90 tests across 11 files)
+bun run test                   # Run all tests
 bun run test:watch            # Test in watch mode
 bun run test src/_utils.ts    # Run tests for specific file
 
@@ -23,7 +23,8 @@ bun run test src/_utils.ts    # Run tests for specific file
 bun run check                  # Biome lint/format check
 bun run check:write           # Biome auto-fix
 bun run check:unsafe          # Biome unsafe auto-fix
-bun run ci                    # Full CI pipeline (build + check + test)
+bun run knip                  # Check for unused dependencies/exports
+bun run ci                    # Full CI pipeline (build + check + typecheck + knip + test)
 
 # CLI Usage
 ./dist/index.js               # Interactive React Ink TUI mode
@@ -60,15 +61,19 @@ src/
 │   ├── Layout/        # Layout components
 │   │   ├── SplitPane.tsx     # Two-pane layout
 │   │   └── *.test.tsx        # Layout tests
-│   └── Preview/       # Content preview
-│       ├── Preview.tsx       # File preview pane
-│       └── MarkdownPreview.tsx # Markdown renderer
+│   ├── Preview/       # Content preview
+│   │   ├── Preview.tsx       # File preview pane
+│   │   └── MarkdownPreview.tsx # Markdown renderer
+│   └── ErrorBoundary.tsx     # Error handling component
 ├── hooks/             # React hooks
 │   ├── useFileNavigation.tsx # File scanning and state
 │   └── index.ts       # Hook exports
 ├── _types.ts          # Type definitions (including branded types)
+├── _consts.ts         # Constants and configuration
+├── _utils.ts          # Utility functions with InSource tests
 ├── claude-md-scanner.ts    # CLAUDE.md file scanner
 ├── slash-command-scanner.ts # Slash command scanner
+├── fast-scanner.ts    # High-performance file scanner
 ├── App.tsx            # Main React application
 └── index.tsx          # Entry point with React Ink render
 ```
@@ -141,7 +146,7 @@ src/
      if (key.downArrow) setCurrentIndex(prev => Math.min(files.length - 1, prev + 1));
      if (key.return) setIsMenuMode(true);
    }, { isActive: !isMenuMode });
-   
+
    // MenuActions component
    useInput((input, key) => {
      if (key.escape) onClose();
@@ -169,6 +174,7 @@ The tool automatically discovers these file types:
 ### TypeScript Configuration
 
 **Ultra-strict type checking** enabled via tsconfig.json:
+
 - `exactOptionalPropertyTypes: true` → No `| undefined` on optional props
 - `noUncheckedIndexedAccess: true` → Array access returns `T | undefined`
 - `noImplicitReturns: true` → All code paths must return
@@ -205,13 +211,14 @@ The tool automatically discovers these file types:
 bun run typecheck              # TypeScript: 0 errors required
 bun run check:write           # Biome: Auto-fix + 0 errors required
 bun run knip                  # Dependency cleanup: 0 unused items required  
-bun run test                  # Tests: 100% pass rate required (142/142)
+bun run test                  # Tests: 100% pass rate required
 bun run build                 # Build: Must complete without errors
 ```
 
 **Alternative single command:**
+
 ```bash
-bun run ci                    # Runs build + check + knip + test in sequence
+bun run ci                    # Runs build + check + typecheck + knip + test in sequence
 ```
 
 ### Quality Standards (Zero Tolerance)
@@ -238,7 +245,7 @@ bun run ci                    # Runs build + check + knip + test in sequence
   - **Components**: Use `function` declaration syntax
   - **Regular functions**: Use arrow function syntax
 - **Exports**: Avoid `default export` except for page components
-- **Type safety**: 
+- **Type safety**:
   - NEVER use `any` type - it is strictly forbidden
   - Avoid `as` type assertions - use proper type guards instead
 - **Code organization**: Follow established patterns in the codebase for consistency
