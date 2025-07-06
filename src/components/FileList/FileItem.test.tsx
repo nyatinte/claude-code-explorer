@@ -28,7 +28,7 @@ if (import.meta.vitest) {
         <FileItem file={file} isSelected={false} isFocused={false} />,
       );
 
-      expect(lastFrame()).toContain('CLAUDE.md');
+      expect(lastFrame()).toContain('test/CLAUDE.md'); // 親ディレクトリ付き
       expect(lastFrame()).toContain('📝'); // claude-mdアイコン
     });
 
@@ -39,7 +39,7 @@ if (import.meta.vitest) {
         <FileItem file={file} isSelected={false} isFocused={false} />,
       );
 
-      expect(lastFrame()).toContain('CLAUDE.local.md');
+      expect(lastFrame()).toContain('test/CLAUDE.local.md'); // 親ディレクトリ付き
       expect(lastFrame()).toContain('🔒'); // claude-local-mdアイコン
     });
 
@@ -50,7 +50,7 @@ if (import.meta.vitest) {
         <FileItem file={file} isSelected={false} isFocused={false} />,
       );
 
-      expect(lastFrame()).toContain('test-command.md');
+      expect(lastFrame()).toContain('test-command'); // .md拡張子は削除される
       expect(lastFrame()).toContain('⚡'); // slash-commandアイコン
     });
 
@@ -61,7 +61,7 @@ if (import.meta.vitest) {
         <FileItem file={file} isSelected={true} isFocused={false} />,
       );
 
-      expect(lastFrame()).toContain('CLAUDE.md');
+      expect(lastFrame()).toContain('test/CLAUDE.md');
       // 選択状態の視覚的表現があることを確認
     });
 
@@ -72,7 +72,7 @@ if (import.meta.vitest) {
         <FileItem file={file} isSelected={false} isFocused={true} />,
       );
 
-      expect(lastFrame()).toContain('CLAUDE.md');
+      expect(lastFrame()).toContain('test/CLAUDE.md');
       expect(lastFrame()).toContain('► '); // フォーカス時のプレフィックス
     });
 
@@ -83,7 +83,7 @@ if (import.meta.vitest) {
         <FileItem file={file} isSelected={true} isFocused={true} />,
       );
 
-      expect(lastFrame()).toContain('CLAUDE.md');
+      expect(lastFrame()).toContain('test/CLAUDE.md');
       expect(lastFrame()).toContain('► '); // フォーカス時のプレフィックス
     });
   });

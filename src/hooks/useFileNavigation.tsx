@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import type {
   ClaudeFileInfo,
+  ClaudeFileType,
+  FileGroup,
   ScanOptions,
   SlashCommandInfo,
 } from '../_types.js';
@@ -31,16 +33,19 @@ const convertSlashCommandToFileInfo = (
 
 type UseFileNavigationReturn = {
   files: NavigationFile[];
+  fileGroups: FileGroup[];
   selectedFile: NavigationFile | undefined;
   isLoading: boolean;
   error: string | undefined;
   selectFile: (file: NavigationFile) => void;
+  toggleGroup: (type: ClaudeFileType) => void;
 };
 
 export function useFileNavigation(
   options: ScanOptions = {},
 ): UseFileNavigationReturn {
   const [files, setFiles] = useState<NavigationFile[]>([]);
+  const [fileGroups, setFileGroups] = useState<FileGroup[]>([]);
   const [selectedFile, setSelectedFile] = useState<
     NavigationFile | undefined
   >();
@@ -63,18 +68,54 @@ export function useFileNavigation(
         // 両方の結果を結合
         const allFiles = [...claudeFiles, ...convertedCommands];
 
-        // ファイル名でソート
-        allFiles.sort((a, b) => {
-          const aName = a.path.split('/').pop() || '';
-          const bName = b.path.split('/').pop() || '';
-          return aName.localeCompare(bName);
+        // ファイルをタイプごとにグループ化
+        const groupedFiles = allFiles.reduce<
+          Record<ClaudeFileType, NavigationFile[]>
+        >(
+          (acc, file) => {
+            if (!acc[file.type]) {
+              acc[file.type] = [];
+            }
+            acc[file.type].push(file);
+            return acc;
+          },
+          {} as Record<ClaudeFileType, NavigationFile[]>,
+        );
+
+        // 各グループ内でファイル名でソート
+        Object.values(groupedFiles).forEach((group) => {
+          group.sort((a, b) => {
+            const aName = a.path.split('/').pop() || '';
+            const bName = b.path.split('/').pop() || '';
+            return aName.localeCompare(bName);
+          });
         });
 
+        // FileGroup配列を作成（定義済みの順序で）
+        const orderedTypes: ClaudeFileType[] = [
+          'claude-md',
+          'claude-local-md',
+          'slash-command',
+          'global-md',
+          'unknown',
+        ];
+        const groups: FileGroup[] = orderedTypes
+          .filter((type) => groupedFiles[type] && groupedFiles[type].length > 0)
+          .map((type) => ({
+            type,
+            files: groupedFiles[type] || [],
+            isExpanded: true, // デフォルトでは全て展開
+          }));
+
+        setFileGroups(groups);
         setFiles(allFiles);
 
-        // 最初のファイルを自動選択
-        if (allFiles.length > 0) {
-          setSelectedFile(allFiles[0]);
+        // 最初のファイルを自動選択（最初のグループの最初のファイル）
+        if (groups.length > 0 && groups[0] && groups[0].files.length > 0) {
+          const firstFile = groups[0].files[0];
+          if (firstFile) {
+            setSelectedFile(firstFile);
+          }
         }
 
         setIsLoading(false);
@@ -90,11 +131,23 @@ export function useFileNavigation(
     setSelectedFile(file);
   }, []);
 
+  const toggleGroup = useCallback((type: ClaudeFileType): void => {
+    setFileGroups((prev) =>
+      prev.map((group) =>
+        group.type === type
+          ? { ...group, isExpanded: !group.isExpanded }
+          : group,
+      ),
+    );
+  }, []);
+
   return {
     files,
+    fileGroups,
     selectedFile,
     isLoading,
     error,
     selectFile,
+    toggleGroup,
   };
 }

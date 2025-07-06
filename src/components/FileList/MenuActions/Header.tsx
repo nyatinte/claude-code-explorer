@@ -6,10 +6,11 @@ type HeaderProps = {
 };
 
 const HeaderDisplay = ({ filePath }: HeaderProps) => (
-  <Box marginBottom={1}>
+  <Box marginBottom={1} flexDirection="column">
     <Text bold color="yellow">
-      📋 Action Menu - {filePath}
+      📋 Actions
     </Text>
+    <Text dimColor>{filePath}</Text>
   </Box>
 );
 

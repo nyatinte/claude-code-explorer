@@ -76,6 +76,13 @@ export type ScanOptions = {
   readonly includeHidden?: boolean | undefined;
 };
 
+// Grouped files for UI display
+export type FileGroup = {
+  readonly type: ClaudeFileType;
+  readonly files: ClaudeFileInfo[];
+  readonly isExpanded: boolean;
+};
+
 // Output formats
 type _OutputFormat = 'table' | 'json';
 

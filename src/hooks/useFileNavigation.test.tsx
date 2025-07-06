@@ -5,13 +5,14 @@ import { createClaudeFilePath } from '../_types.js';
 import { scanClaudeFiles } from '../claude-md-scanner.js';
 import { scanSlashCommands } from '../slash-command-scanner.js';
 import { createMockFile, createMockSlashCommand } from '../test-helpers.js';
+import { delay } from '../test-utils.js';
 import { useFileNavigation } from './useFileNavigation.js';
 
-// モジュールのモック
+// Module mocks
 vi.mock('../claude-md-scanner.js');
 vi.mock('../slash-command-scanner.js');
 
-// テスト用コンポーネント（useFileNavigationをテストするため）
+// Test component (for testing useFileNavigation)
 function TestComponent() {
   const { files, selectedFile, isLoading, error } = useFileNavigation();
 
@@ -35,19 +36,19 @@ function TestComponent() {
 if (import.meta.vitest) {
   const { describe, test, expect, vi, beforeEach } = import.meta.vitest;
 
-  // モックの型付け
+  // Mock typing
   const mockedScanClaudeFiles = vi.mocked(scanClaudeFiles);
   const mockedScanSlashCommands = vi.mocked(scanSlashCommands);
 
   beforeEach(() => {
-    // 各テストの前にモックをリセット
+    // Reset mocks before each test
     mockedScanClaudeFiles.mockClear();
     mockedScanSlashCommands.mockClear();
     vi.clearAllTimers();
   });
 
   describe('useFileNavigation', () => {
-    test('ファイルの読み込みとソートが正常に行われる', async () => {
+    test('files are loaded and sorted correctly', async () => {
       const claudeFiles: ClaudeFileInfo[] = [
         createMockFile('z-file.md', 'claude-md', '/project/z-file.md'),
         createMockFile('a-file.md', 'claude-local-md', '/project/a-file.md'),
@@ -66,55 +67,55 @@ if (import.meta.vitest) {
 
       const { lastFrame } = render(<TestComponent />);
 
-      // 初期状態はローディング中
+      // Initial state is loading
       expect(lastFrame()).toContain('Loading...');
 
-      // 非同期処理の完了を待つ
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Wait for async processing to complete
+      await delay(100);
 
-      // 結果の確認
+      // Verify results
       expect(lastFrame()).toContain('Files: 3');
-      expect(lastFrame()).toContain('Selected: /project/a-file.md'); // ソート後の最初のファイル
+      expect(lastFrame()).toContain('Selected: /project/z-file.md'); // First file in claude-md group
 
-      // スキャン関数が正しいオプションで呼ばれたことを確認
+      // Verify scan functions were called with correct options
       expect(mockedScanClaudeFiles).toHaveBeenCalledWith({ recursive: true });
       expect(mockedScanSlashCommands).toHaveBeenCalledWith({ recursive: true });
     });
 
-    test('Claude ファイル読み込みエラー時にエラー状態が設定される', async () => {
+    test('error state is set when Claude file loading fails', async () => {
       const errorMessage = 'Failed to scan Claude files';
       mockedScanClaudeFiles.mockRejectedValue(new Error(errorMessage));
       mockedScanSlashCommands.mockResolvedValue([]);
 
       const { lastFrame } = render(<TestComponent />);
 
-      // 初期状態はローディング中
+      // Initial state is loading
       expect(lastFrame()).toContain('Loading...');
 
-      // 非同期処理の完了を待つ
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Wait for async processing to complete
+      await delay(100);
 
       expect(lastFrame()).toContain(`Error: ${errorMessage}`);
     });
 
-    test('スラッシュコマンド読み込みエラー時にエラー状態が設定される', async () => {
+    test('error state is set when slash command loading fails', async () => {
       const errorMessage = 'Failed to scan slash commands';
       mockedScanClaudeFiles.mockResolvedValue([]);
       mockedScanSlashCommands.mockRejectedValue(new Error(errorMessage));
 
       const { lastFrame } = render(<TestComponent />);
 
-      // 初期状態はローディング中
+      // Initial state is loading
       expect(lastFrame()).toContain('Loading...');
 
-      // 非同期処理の完了を待つ
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Wait for async processing to complete
+      await delay(100);
 
       expect(lastFrame()).toContain(`Error: ${errorMessage}`);
     });
 
-    test('エラーメッセージが存在しない場合のフォールバック', async () => {
-      // メッセージのないエラーオブジェクト
+    test('fallback when error message does not exist', async () => {
+      // Error object without message
       const errorWithoutMessage = new Error();
       errorWithoutMessage.message = '';
 
@@ -128,7 +129,7 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('Error: Failed to scan files');
     });
 
-    test('空の結果が返された場合', async () => {
+    test('when empty results are returned', async () => {
       mockedScanClaudeFiles.mockResolvedValue([]);
       mockedScanSlashCommands.mockResolvedValue([]);
 
@@ -140,7 +141,7 @@ if (import.meta.vitest) {
       expect(lastFrame()).not.toContain('Selected:');
     });
 
-    test('SlashCommandInfo から ClaudeFileInfo への変換が正しく行われる', async () => {
+    test('SlashCommandInfo to ClaudeFileInfo conversion works correctly', async () => {
       const slashCommand = createMockSlashCommand('deploy', {
         description: 'Deploy to production',
         hasArguments: true,
@@ -159,7 +160,7 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('Selected: /.claude/commands/deploy.md');
     });
 
-    test('namespace がない SlashCommand の変換', async () => {
+    test('SlashCommand conversion without namespace', async () => {
       const slashCommand = createMockSlashCommand('test', {
         namespace: undefined,
         filePath: createClaudeFilePath('/.claude/commands/test.md'),
@@ -176,7 +177,7 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('Selected: /.claude/commands/test.md');
     });
 
-    test('ファイルソート機能の確認', async () => {
+    test('file sorting functionality verification', async () => {
       const claudeFiles: ClaudeFileInfo[] = [
         createMockFile('z-file.md', 'claude-md', '/project/z-file.md'),
         createMockFile('a-file.md', 'claude-local-md', '/project/a-file.md'),
@@ -190,12 +191,12 @@ if (import.meta.vitest) {
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // ファイル名でソートされて、最初のファイル（a-file.md）が選択されている
+      // Sorted by group order, first file in claude-md group (z-file.md) is selected
       expect(lastFrame()).toContain('Files: 3');
-      expect(lastFrame()).toContain('Selected: /project/a-file.md');
+      expect(lastFrame()).toContain('Selected: /project/z-file.md');
     });
 
-    test('複数のファイルタイプの混合', async () => {
+    test('mixing multiple file types', async () => {
       const claudeFiles: ClaudeFileInfo[] = [
         createMockFile('CLAUDE.md', 'claude-md', '/project/CLAUDE.md'),
         createMockFile(
@@ -222,8 +223,8 @@ if (import.meta.vitest) {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(lastFrame()).toContain('Files: 4');
-      // CLAUDE.local.md が最初にソートされる
-      expect(lastFrame()).toContain('Selected: /project/CLAUDE.local.md');
+      // Sorted by group order, so first file in claude-md group (CLAUDE.md) is selected
+      expect(lastFrame()).toContain('Selected: /project/CLAUDE.md');
     });
   });
 }

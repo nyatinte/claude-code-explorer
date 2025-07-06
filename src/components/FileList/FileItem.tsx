@@ -1,4 +1,4 @@
-import { basename } from 'node:path';
+import { basename, dirname } from 'node:path';
 import { Badge } from '@inkjs/ui';
 import { Box, Text } from 'ink';
 import React from 'react';
@@ -47,8 +47,19 @@ export const FileItem = React.memo(function FileItem({
     }
   };
 
-  // ファイル名を取得（パスからbasenameを抽出）
+  // ファイル名と親ディレクトリを取得
   const fileName = basename(file.path);
+  const dirPath = dirname(file.path);
+  const parentDir = basename(dirPath);
+
+  // 表示用のファイル名（親ディレクトリを含む）
+  // ホームディレクトリの場合は特殊処理
+  const displayName =
+    file.type === 'global-md'
+      ? `~/.claude/${fileName}`
+      : file.type === 'slash-command'
+        ? fileName.replace('.md', '') // コマンドは.mdを除去
+        : `${parentDir}/${fileName}`;
 
   const prefix = isFocused ? '► ' : '  ';
 
@@ -60,17 +71,17 @@ export const FileItem = React.memo(function FileItem({
         {isSelected ? (
           <Text backgroundColor="blue" color="white">
             {prefix}
-            {getFileIcon(file)} {fileName}
+            {getFileIcon(file)} {displayName}
           </Text>
         ) : isFocused ? (
           <Text color="white">
             {prefix}
-            {getFileIcon(file)} {fileName}
+            {getFileIcon(file)} {displayName}
           </Text>
         ) : (
           <Text>
             {prefix}
-            {getFileIcon(file)} {fileName}
+            {getFileIcon(file)} {displayName}
           </Text>
         )}
       </Box>

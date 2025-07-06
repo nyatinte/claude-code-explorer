@@ -1,149 +1,288 @@
 import { basename } from 'node:path';
-import { TextInput } from '@inkjs/ui';
 import { Box, Text, useFocus, useInput } from 'ink';
 import React, { useEffect, useMemo, useState } from 'react';
-import type { ClaudeFileInfo } from '../../_types.js';
+import type {
+  ClaudeFileInfo,
+  ClaudeFileType,
+  FileGroup,
+} from '../../_types.js';
+import { FileGroup as FileGroupComponent } from './FileGroup.js';
 import { FileItem } from './FileItem.js';
 import { MenuActions } from './MenuActions/index.js';
 
 type FileListProps = {
   readonly files: ClaudeFileInfo[];
+  readonly fileGroups: FileGroup[];
   readonly onFileSelect: (file: ClaudeFileInfo) => void;
+  readonly onToggleGroup: (type: ClaudeFileType) => void;
   readonly selectedFile?: ClaudeFileInfo | undefined;
+  readonly initialSearchQuery?: string | undefined;
+  readonly onSearchQueryChange?: (query: string) => void;
 };
 
 const FileList = React.memo(function FileList({
   files,
+  fileGroups,
   onFileSelect,
+  onToggleGroup,
   selectedFile: _selectedFile,
+  initialSearchQuery = '',
+  onSearchQueryChange,
 }: FileListProps): React.JSX.Element {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
+  const [currentFileIndex, setCurrentFileIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [isMenuMode, setIsMenuMode] = useState(false);
+  const [isGroupSelected, setIsGroupSelected] = useState(false);
   const { isFocused } = useFocus({ autoFocus: true });
 
-  // 検索フィルタリング（メモ化）
-  const filteredFiles = useMemo(() => {
-    if (!searchQuery) return files;
+  // Filtered groups after search (memoized)
+  const filteredGroups = useMemo(() => {
+    if (!searchQuery) return fileGroups;
 
-    return files.filter((file) => {
-      const fileName = basename(file.path);
-      return (
-        fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        file.path.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    });
-  }, [files, searchQuery]);
+    return fileGroups
+      .map((group) => ({
+        ...group,
+        files: group.files.filter((file) => {
+          const fileName = basename(file.path);
+          return (
+            fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            file.path.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        }),
+      }))
+      .filter((group) => group.files.length > 0);
+  }, [fileGroups, searchQuery]);
 
-  // ファイルリストが変更されたときにcurrentIndexを調整
+  // Get currently selected file
+  const getCurrentFile = () => {
+    if (isGroupSelected || filteredGroups.length === 0) return null;
+    const group = filteredGroups[currentGroupIndex];
+    if (!group || !group.isExpanded || group.files.length === 0) return null;
+    return group.files[currentFileIndex];
+  };
+
+  // Adjust indices when group list changes
   useEffect(() => {
-    if (filteredFiles.length > 0 && currentIndex >= filteredFiles.length) {
-      setCurrentIndex(0);
+    if (filteredGroups.length > 0) {
+      if (currentGroupIndex >= filteredGroups.length) {
+        setCurrentGroupIndex(0);
+      }
+      const group = filteredGroups[currentGroupIndex];
+      if (group?.isExpanded && currentFileIndex >= group.files.length) {
+        setCurrentFileIndex(0);
+      }
     }
-  }, [filteredFiles.length, currentIndex]);
+  }, [filteredGroups, currentGroupIndex, currentFileIndex]);
 
-  // 検索クエリが変更されたときにcurrentIndexをリセット
-  // biome-ignore lint/correctness/useExhaustiveDependencies: searchQueryの変更を検出してcurrentIndexをリセットするため
+  // Reset indices when search query changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Need to detect searchQuery changes to reset indices
   useEffect(() => {
-    setCurrentIndex(0);
+    setCurrentGroupIndex(0);
+    setCurrentFileIndex(0);
+    setIsGroupSelected(false);
   }, [searchQuery]);
 
-  // currentIndexが変更されたときにリアルタイムでファイル選択を更新
+  // Update file selection when selection state changes
   useEffect(() => {
-    const currentFile = filteredFiles[currentIndex];
+    if (isGroupSelected || filteredGroups.length === 0) return;
+    const group = filteredGroups[currentGroupIndex];
+    if (!group || !group.isExpanded || group.files.length === 0) return;
+    const currentFile = group.files[currentFileIndex];
     if (currentFile) {
       onFileSelect(currentFile);
     }
-  }, [currentIndex, filteredFiles, onFileSelect]);
+  }, [
+    currentGroupIndex,
+    currentFileIndex,
+    filteredGroups,
+    isGroupSelected,
+    onFileSelect,
+  ]);
 
-  // キーボード操作
+  // Keyboard input handling
   useInput(
-    (_input, key) => {
-      // 検索フィールドフォーカス中は処理しない
-      if (isSearchFocused || isMenuMode) return;
+    (input, key) => {
+      if (isMenuMode) return;
 
+      // Handle special keys
       if (key.escape) {
-        process.exit(0);
-      }
-
-      if (key.tab) {
-        setIsSearchFocused(true);
+        if (searchQuery) {
+          // Clear search if active
+          setSearchQuery('');
+          onSearchQueryChange?.('');
+        } else {
+          // Exit if no search
+          process.exit(0);
+        }
         return;
       }
 
-      // ファイルナビゲーション
+      // Clear search on backspace when empty
+      if (key.backspace && searchQuery) {
+        setSearchQuery(searchQuery.slice(0, -1));
+        onSearchQueryChange?.(searchQuery.slice(0, -1));
+        return;
+      }
+
+      // Navigation keys
       if (key.upArrow) {
-        setCurrentIndex((prev) => Math.max(0, prev - 1));
+        if (isGroupSelected) {
+          // Group navigation
+          setCurrentGroupIndex((prev) => Math.max(0, prev - 1));
+        } else {
+          // File navigation
+          const group = filteredGroups[currentGroupIndex];
+          if (group?.isExpanded && currentFileIndex > 0) {
+            setCurrentFileIndex((prev) => prev - 1);
+          } else if (currentGroupIndex > 0) {
+            // Move to previous group
+            const prevGroupIndex = currentGroupIndex - 1;
+            const prevGroup = filteredGroups[prevGroupIndex];
+            if (prevGroup?.isExpanded && prevGroup.files.length > 0) {
+              setCurrentGroupIndex(prevGroupIndex);
+              setCurrentFileIndex(prevGroup.files.length - 1);
+            } else {
+              // Select group
+              setCurrentGroupIndex(prevGroupIndex);
+              setIsGroupSelected(true);
+            }
+          } else {
+            // Select first group
+            setIsGroupSelected(true);
+          }
+        }
       } else if (key.downArrow) {
-        setCurrentIndex((prev) => Math.min(filteredFiles.length - 1, prev + 1));
-      } else if (key.return) {
-        // Enterキーでメニューモード切り替え
-        if (filteredFiles[currentIndex]) {
-          setIsMenuMode(true);
+        if (isGroupSelected) {
+          // From group to file
+          const group = filteredGroups[currentGroupIndex];
+          if (group?.isExpanded && group.files.length > 0) {
+            setIsGroupSelected(false);
+            setCurrentFileIndex(0);
+          } else if (currentGroupIndex < filteredGroups.length - 1) {
+            setCurrentGroupIndex((prev) => prev + 1);
+          }
+        } else {
+          // File navigation
+          const group = filteredGroups[currentGroupIndex];
+          if (group?.isExpanded && currentFileIndex < group.files.length - 1) {
+            setCurrentFileIndex((prev) => prev + 1);
+          } else if (currentGroupIndex < filteredGroups.length - 1) {
+            // Move to next group
+            setCurrentGroupIndex((prev) => prev + 1);
+            setIsGroupSelected(true);
+            setCurrentFileIndex(0);
+          }
+        }
+      } else if (key.return || input === ' ') {
+        if (isGroupSelected) {
+          // Toggle group expand/collapse
+          const group = filteredGroups[currentGroupIndex];
+          if (group) {
+            onToggleGroup(group.type);
+          }
+        } else {
+          // Open file menu
+          const currentFile = getCurrentFile();
+          if (currentFile) {
+            setIsMenuMode(true);
+          }
         }
       }
+
+      // Handle text input for search (exclude space and special characters)
+      if (
+        input &&
+        input !== ' ' &&
+        !key.return &&
+        !key.upArrow &&
+        !key.downArrow &&
+        !key.escape
+      ) {
+        setSearchQuery(searchQuery + input);
+        onSearchQueryChange?.(searchQuery + input);
+      }
     },
-    { isActive: isFocused && !isMenuMode && !isSearchFocused },
+    { isActive: isFocused && !isMenuMode },
   );
 
   return (
     <Box flexDirection="column" height="100%">
-      {/* ヘッダー - 常に表示 */}
+      {/* Header - always visible */}
       <Box marginBottom={1}>
         <Text bold color="cyan">
-          Claude Files ({isMenuMode ? files.length : filteredFiles.length})
+          Claude Files (
+          {isMenuMode
+            ? files.length
+            : filteredGroups.reduce((acc, g) => acc + g.files.length, 0)}
+          )
         </Text>
       </Box>
 
-      {/* 検索入力 - メニューモード時は無効化 */}
+      {/* Search display */}
       <Box marginBottom={1}>
-        <TextInput
-          placeholder="Type to filter files..."
-          defaultValue={searchQuery}
-          onChange={setSearchQuery}
-          onSubmit={() => {
-            setIsSearchFocused(false);
-          }}
-          isDisabled={isMenuMode}
-        />
+        <Text dimColor>
+          {searchQuery ? <>Search: {searchQuery}</> : 'Type to search...'}
+        </Text>
       </Box>
 
-      {/* ファイル一覧 - メニューモード時は非表示だが存在 */}
+      {/* File list - hidden in menu mode but still exists */}
       <Box
         flexDirection="column"
         flexGrow={1}
         height={isMenuMode ? 0 : undefined}
       >
         {!isMenuMode &&
-          (filteredFiles.length === 0 ? (
-            <Text dimColor>No files found</Text>
-          ) : (
-            filteredFiles.map((file, index) => (
-              <FileItem
-                key={`${file.path}-${index}`}
-                file={file}
-                isSelected={index === currentIndex}
-                isFocused={index === currentIndex && isFocused && !isMenuMode}
+          filteredGroups.map((group, groupIndex) => (
+            <Box key={group.type} flexDirection="column">
+              <FileGroupComponent
+                type={group.type}
+                fileCount={group.files.length}
+                isExpanded={group.isExpanded}
+                isSelected={isGroupSelected && groupIndex === currentGroupIndex}
               />
-            ))
+              {group.isExpanded &&
+                group.files.map((file, fileIndex) => (
+                  <Box key={`${file.path}-${fileIndex}`} paddingLeft={2}>
+                    <FileItem
+                      file={file}
+                      isSelected={
+                        !isGroupSelected &&
+                        groupIndex === currentGroupIndex &&
+                        fileIndex === currentFileIndex
+                      }
+                      isFocused={
+                        !isGroupSelected &&
+                        groupIndex === currentGroupIndex &&
+                        fileIndex === currentFileIndex &&
+                        isFocused &&
+                        !isMenuMode
+                      }
+                    />
+                  </Box>
+                ))}
+            </Box>
           ))}
       </Box>
 
-      {/* メニューアクション - メニューモード時のみ表示 */}
-      {isMenuMode && filteredFiles[currentIndex] && (
-        <Box flexGrow={1}>
-          <MenuActions
-            file={filteredFiles[currentIndex]}
-            onClose={() => setIsMenuMode(false)}
-          />
-        </Box>
-      )}
+      {/* Menu actions - only visible in menu mode */}
+      {isMenuMode &&
+        (() => {
+          const currentFile = getCurrentFile();
+          return currentFile ? (
+            <Box flexGrow={1}>
+              <MenuActions
+                file={currentFile}
+                onClose={() => setIsMenuMode(false)}
+              />
+            </Box>
+          ) : null;
+        })()}
 
-      {/* フッター - 常に表示 */}
+      {/* Footer - always visible */}
       <Box marginTop={1} borderStyle="single" borderTop={true}>
         <Text dimColor>
-          ↑↓: Navigate | Enter: Menu | Tab: Search | Esc: Exit
+          ↑↓: Navigate | Enter/Space: Select | Esc: Clear/Exit | Type to search
         </Text>
       </Box>
     </Box>

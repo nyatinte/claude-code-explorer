@@ -6,7 +6,7 @@ if (import.meta.vitest) {
   const { describe, test, expect, vi } = import.meta.vitest;
 
   describe('MenuActions', () => {
-    test('メニューアクションの基本表示', () => {
+    test('basic menu action display', () => {
       const file = createMockFile('CLAUDE.md', 'claude-md');
       const onClose = vi.fn();
 
@@ -14,7 +14,8 @@ if (import.meta.vitest) {
         <MenuActions file={file} onClose={onClose} />,
       );
 
-      expect(lastFrame()).toContain('📋 Action Menu - /test/CLAUDE.md');
+      expect(lastFrame()).toContain('📋 Actions');
+      expect(lastFrame()).toContain('/test/CLAUDE.md');
       expect(lastFrame()).toContain('[C] Copy Content');
       expect(lastFrame()).toContain('[P] Copy Path (Absolute)');
       expect(lastFrame()).toContain('[R] Copy Path (Relative)');
@@ -22,7 +23,7 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('[O] Open File');
     });
 
-    test('初期選択状態の表示', () => {
+    test('initial selection state display', () => {
       const file = createMockFile('CLAUDE.md', 'claude-md');
       const onClose = vi.fn();
 
@@ -30,11 +31,11 @@ if (import.meta.vitest) {
         <MenuActions file={file} onClose={onClose} />,
       );
 
-      // 最初の項目が選択されている
+      // First item is selected
       expect(lastFrame()).toContain('► [C] Copy Content');
     });
 
-    test('キーボードナビゲーション情報の表示', () => {
+    test('keyboard navigation information display', () => {
       const file = createMockFile('CLAUDE.md', 'claude-md');
       const onClose = vi.fn();
 
@@ -47,7 +48,7 @@ if (import.meta.vitest) {
       );
     });
 
-    test('異なるファイルタイプでの表示', () => {
+    test('display with different file types', () => {
       const file = createMockFile(
         'test-command.md',
         'slash-command',
@@ -59,12 +60,13 @@ if (import.meta.vitest) {
         <MenuActions file={file} onClose={onClose} />,
       );
 
+      expect(lastFrame()).toContain('📋 Actions');
       expect(lastFrame()).toContain(
-        '📋 Action Menu - /project/.claude/commands/test-command.md',
+        '/project/.claude/commands/test-command.md',
       );
     });
 
-    test('全アクションの存在確認', () => {
+    test('all actions exist', () => {
       const file = createMockFile('CLAUDE.local.md', 'claude-local-md');
       const onClose = vi.fn();
 
@@ -72,7 +74,7 @@ if (import.meta.vitest) {
         <MenuActions file={file} onClose={onClose} />,
       );
 
-      // 5つのアクションがあることを確認
+      // Verify 5 actions are present
       expect(lastFrame()).toContain('[C] Copy Content');
       expect(lastFrame()).toContain('[P] Copy Path (Absolute)');
       expect(lastFrame()).toContain('[R] Copy Path (Relative)');
@@ -80,7 +82,7 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('[O] Open File');
     });
 
-    test('メニューのヘッダー情報', () => {
+    test('menu header information', () => {
       const file = createMockFile('CLAUDE.md', 'claude-md');
       const onClose = vi.fn();
 
@@ -89,11 +91,11 @@ if (import.meta.vitest) {
       );
 
       const output = lastFrame();
-      expect(output).toContain('📋 Action Menu');
+      expect(output).toContain('📋 Actions');
       expect(output).toContain('/test/CLAUDE.md');
     });
 
-    test('メニューアクションの順序', () => {
+    test('menu action order', () => {
       const file = createMockFile('test.md', 'claude-md');
       const onClose = vi.fn();
 
@@ -103,7 +105,7 @@ if (import.meta.vitest) {
 
       const output = lastFrame();
 
-      // アクションが正しい順序で表示されていることを確認
+      // Verify actions are displayed in correct order
       const copyContentIndex = output?.indexOf('[C] Copy Content') ?? -1;
       const copyAbsoluteIndex =
         output?.indexOf('[P] Copy Path (Absolute)') ?? -1;
@@ -119,7 +121,7 @@ if (import.meta.vitest) {
       expect(openFileIndex).toBeGreaterThan(copyDirIndex);
     });
 
-    test('長いファイルパスの表示', () => {
+    test('long file path display', () => {
       const file = createMockFile(
         'very-long-filename.md',
         'slash-command',
@@ -136,7 +138,7 @@ if (import.meta.vitest) {
       );
     });
 
-    test('特殊文字を含むファイルパスの表示', () => {
+    test('file path with special characters display', () => {
       const file = createMockFile(
         'file with spaces & symbols.md',
         'claude-md',
@@ -153,7 +155,7 @@ if (import.meta.vitest) {
       );
     });
 
-    test('グローバル設定ファイルの表示', () => {
+    test('global config file display', () => {
       const file = createMockFile(
         'CLAUDE.md',
         'global-md',
@@ -165,12 +167,11 @@ if (import.meta.vitest) {
         <MenuActions file={file} onClose={onClose} />,
       );
 
-      expect(lastFrame()).toContain(
-        '📋 Action Menu - /Users/username/.claude/CLAUDE.md',
-      );
+      expect(lastFrame()).toContain('📋 Actions');
+      expect(lastFrame()).toContain('/Users/username/.claude/CLAUDE.md');
     });
 
-    test('メニューのレイアウト構造', () => {
+    test('menu layout structure', () => {
       const file = createMockFile('test.md', 'claude-md');
       const onClose = vi.fn();
 
@@ -180,13 +181,13 @@ if (import.meta.vitest) {
 
       const output = lastFrame();
 
-      // レイアウト要素の確認
-      expect(output).toContain('📋 Action Menu');
-      expect(output).toContain('► [C] Copy Content'); // 選択インジケーター
-      expect(output).toContain('↑↓: Navigate'); // ヘルプテキスト
+      // Verify layout elements
+      expect(output).toContain('📋 Actions');
+      expect(output).toContain('► [C] Copy Content'); // Selection indicator
+      expect(output).toContain('↑↓: Navigate'); // Help text
     });
 
-    test('アクションの説明テキスト確認', () => {
+    test('action description text verification', () => {
       const file = createMockFile('test.md', 'claude-md');
       const onClose = vi.fn();
 
@@ -196,7 +197,7 @@ if (import.meta.vitest) {
 
       const output = lastFrame();
 
-      // 各アクションのラベルを確認
+      // Verify each action label
       expect(output).toContain('Copy Content');
       expect(output).toContain('Copy Path (Absolute)');
       expect(output).toContain('Copy Path (Relative)');
@@ -204,7 +205,7 @@ if (import.meta.vitest) {
       expect(output).toContain('Open File');
     });
 
-    test('キーボードショートカットの表示', () => {
+    test('keyboard shortcut display', () => {
       const file = createMockFile('test.md', 'claude-md');
       const onClose = vi.fn();
 
@@ -214,7 +215,7 @@ if (import.meta.vitest) {
 
       const output = lastFrame();
 
-      // 各アクションのキーバインドを確認
+      // Verify each action key binding
       expect(output).toContain('[C]');
       expect(output).toContain('[P]');
       expect(output).toContain('[R]');
@@ -222,7 +223,7 @@ if (import.meta.vitest) {
       expect(output).toContain('[O]');
     });
 
-    test('メニューのヘルプセクション', () => {
+    test('menu help section', () => {
       const file = createMockFile('test.md', 'claude-md');
       const onClose = vi.fn();
 
@@ -232,14 +233,14 @@ if (import.meta.vitest) {
 
       const output = lastFrame();
 
-      // ヘルプテキストの各要素を確認
+      // Verify each help text element
       expect(output).toContain('↑↓: Navigate');
       expect(output).toContain('Enter: Execute');
       expect(output).toContain('[Key]: Direct action');
       expect(output).toContain('Esc: Close');
     });
 
-    test('異なるファイル名での表示確認', () => {
+    test('display verification with different filenames', () => {
       const files = [
         createMockFile('config.md', 'claude-md'),
         createMockFile('settings.md', 'claude-local-md'),
@@ -252,11 +253,12 @@ if (import.meta.vitest) {
           <MenuActions file={file} onClose={onClose} />,
         );
 
-        expect(lastFrame()).toContain(`📋 Action Menu - ${file.path}`);
+        expect(lastFrame()).toContain('📋 Actions');
+        expect(lastFrame()).toContain(file.path);
       });
     });
 
-    test('メニューレンダリングの安定性', () => {
+    test('menu rendering stability', () => {
       const file1 = createMockFile('file1.md', 'claude-md');
       const file2 = createMockFile('file2.md', 'claude-local-md');
       const onClose = vi.fn();
@@ -267,7 +269,7 @@ if (import.meta.vitest) {
 
       expect(lastFrame()).toContain('file1.md');
 
-      // 別のファイルで再レンダリング
+      // Re-render with different file
       rerender(<MenuActions file={file2} onClose={onClose} />);
 
       expect(lastFrame()).toContain('file2.md');

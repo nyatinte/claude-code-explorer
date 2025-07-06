@@ -13,8 +13,15 @@ type AppProps = {
 };
 
 export function App({ cliOptions }: AppProps): React.JSX.Element {
-  const { files, selectedFile, isLoading, error, selectFile } =
-    useFileNavigation({ path: cliOptions.path });
+  const {
+    files,
+    fileGroups,
+    selectedFile,
+    isLoading,
+    error,
+    selectFile,
+    toggleGroup,
+  } = useFileNavigation({ path: cliOptions.path });
 
   // エラー状態
   if (error) {
@@ -78,8 +85,10 @@ export function App({ cliOptions }: AppProps): React.JSX.Element {
               <ErrorBoundary>
                 <FileList
                   files={files}
+                  fileGroups={fileGroups}
                   selectedFile={selectedFile}
                   onFileSelect={selectFile}
+                  onToggleGroup={toggleGroup}
                 />
               </ErrorBoundary>
             }
