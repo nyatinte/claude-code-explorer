@@ -47,9 +47,12 @@ export function useFileNavigation(
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
 
+  // オブジェクト依存を分解
+  const { path, recursive = true } = options;
+
   useEffect(() => {
     // ファイルスキャン実行
-    const scanOptions = { recursive: true, ...options };
+    const scanOptions = { recursive, path };
     Promise.all([scanClaudeFiles(scanOptions), scanSlashCommands(scanOptions)])
       .then(([claudeFiles, slashCommands]) => {
         // スラッシュコマンドをClaudeFileInfo形式に変換
@@ -81,7 +84,7 @@ export function useFileNavigation(
         setError(err.message || 'Failed to scan files');
         setIsLoading(false);
       });
-  }, [options]);
+  }, [path, recursive]);
 
   const selectFile = useCallback((file: NavigationFile): void => {
     setSelectedFile(file);
