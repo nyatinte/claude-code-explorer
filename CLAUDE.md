@@ -126,7 +126,7 @@ src/
    }
    ```
 
-4. **Pattern Matching for File Type Detection**: 
+4. **Pattern Matching for File Type Detection**:
 
    ```typescript
    const detectClaudeFileType = (fileName: string, dirPath: string): ClaudeFileType => {
@@ -237,6 +237,8 @@ bun run ci                    # Runs build + check + typecheck + knip + test in 
 - **Test coverage**: InSource tests required for all utility functions
 - **Error handling**: Graceful degradation with user-friendly error messages
 - **Dependency management**: Keep dependencies clean - remove unused imports and exports immediately
+- **No unnecessary comments**: Code should be self-documenting; avoid redundant comments
+- **Use English**: All code, comments, and documentation must be in English for consistency
 
 ### TypeScript Coding Standards (Strictly Enforced)
 
