@@ -38,9 +38,10 @@ export function FileList({
   }, [files, searchQuery]);
 
   // 検索クエリが変更されたときにcurrentIndexをリセット
+  // biome-ignore lint/correctness/useExhaustiveDependencies: searchQuery変更時のリセットが必要
   useEffect(() => {
     setCurrentIndex(0);
-  }, []);
+  }, [searchQuery]);
 
   // ファイルリストが変更されたときにcurrentIndexを調整
   useEffect(() => {
