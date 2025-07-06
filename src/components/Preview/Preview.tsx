@@ -20,20 +20,24 @@ export function Preview({ file }: PreviewProps): React.JSX.Element {
       return;
     }
 
-    setIsLoading(true);
-    setError('');
+    const loadFileContent = async () => {
+      setIsLoading(true);
+      setError('');
 
-    // ファイル内容読み込み（非同期）
-    import('node:fs/promises')
-      .then((fs) => fs.readFile(file.path, 'utf-8'))
-      .then((content) => {
+      try {
+        const fs = await import('node:fs/promises');
+        const content = await fs.readFile(file.path, 'utf-8');
         setContent(content);
         setIsLoading(false);
-      })
-      .catch((err) => {
-        setError(`Failed to read file: ${err.message}`);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Unknown error';
+        setError(`Failed to read file: ${errorMessage}`);
         setIsLoading(false);
-      });
+      }
+    };
+
+    loadFileContent();
   }, [file]);
 
   if (!file) {
