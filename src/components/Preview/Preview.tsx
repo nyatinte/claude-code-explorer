@@ -1,3 +1,4 @@
+import { open, readFile, stat } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { Box, Text } from 'ink';
 import type React from 'react';
@@ -26,7 +27,6 @@ export function Preview({ file }: PreviewProps): React.JSX.Element {
       setError('');
 
       try {
-        const fs = await import('node:fs/promises');
         const MAX_PREVIEW_SIZE = 1024 * 1024; // 1MB
 
         // バイナリファイルかチェック
@@ -37,18 +37,18 @@ export function Preview({ file }: PreviewProps): React.JSX.Element {
         }
 
         // ファイルサイズをチェック
-        const stats = await fs.stat(file.path);
+        const stats = await stat(file.path);
 
         if (stats.size > MAX_PREVIEW_SIZE) {
           // 大きなファイルは最初の部分だけ読み込み
           const buffer = Buffer.alloc(MAX_PREVIEW_SIZE);
-          const fd = await fs.open(file.path, 'r');
+          const fd = await open(file.path, 'r');
           await fd.read(buffer, 0, MAX_PREVIEW_SIZE, 0);
           await fd.close();
           const content = `${buffer.toString('utf-8')}\n\n... (file truncated due to size limit) ...`;
           setContent(content);
         } else {
-          const content = await fs.readFile(file.path, 'utf-8');
+          const content = await readFile(file.path, 'utf-8');
           setContent(content);
         }
         setIsLoading(false);

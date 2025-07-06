@@ -36,18 +36,18 @@ const FileList = React.memo(function FileList({
     });
   }, [files, searchQuery]);
 
-  // 検索クエリが変更されたときにcurrentIndexをリセット
-  // biome-ignore lint/correctness/useExhaustiveDependencies: searchQuery変更時のリセットが必要
-  useEffect(() => {
-    setCurrentIndex(0);
-  }, [searchQuery]);
-
   // ファイルリストが変更されたときにcurrentIndexを調整
   useEffect(() => {
     if (filteredFiles.length > 0 && currentIndex >= filteredFiles.length) {
       setCurrentIndex(0);
     }
   }, [filteredFiles.length, currentIndex]);
+
+  // 検索クエリが変更されたときにcurrentIndexをリセット
+  // biome-ignore lint/correctness/useExhaustiveDependencies: searchQueryの変更を検出してcurrentIndexをリセットするため
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [searchQuery]);
 
   // currentIndexが変更されたときにリアルタイムでファイル選択を更新
   useEffect(() => {
@@ -65,7 +65,6 @@ const FileList = React.memo(function FileList({
 
       if (key.escape) {
         process.exit(0);
-        return;
       }
 
       if (key.tab) {
