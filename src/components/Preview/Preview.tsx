@@ -3,6 +3,7 @@ import { Box, Text } from 'ink';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import type { ClaudeFileInfo } from '../../_types.js';
+import { isBinaryFile } from '../../_utils.js';
 import { MarkdownPreview } from './MarkdownPreview.js';
 
 type PreviewProps = {
@@ -26,8 +27,30 @@ export function Preview({ file }: PreviewProps): React.JSX.Element {
 
       try {
         const fs = await import('node:fs/promises');
-        const content = await fs.readFile(file.path, 'utf-8');
-        setContent(content);
+        const MAX_PREVIEW_SIZE = 1024 * 1024; // 1MB
+
+        // バイナリファイルかチェック
+        if (await isBinaryFile(file.path)) {
+          setError('Binary file cannot be previewed');
+          setIsLoading(false);
+          return;
+        }
+
+        // ファイルサイズをチェック
+        const stats = await fs.stat(file.path);
+
+        if (stats.size > MAX_PREVIEW_SIZE) {
+          // 大きなファイルは最初の部分だけ読み込み
+          const buffer = Buffer.alloc(MAX_PREVIEW_SIZE);
+          const fd = await fs.open(file.path, 'r');
+          await fd.read(buffer, 0, MAX_PREVIEW_SIZE, 0);
+          await fd.close();
+          const content = `${buffer.toString('utf-8')}\n\n... (file truncated due to size limit) ...`;
+          setContent(content);
+        } else {
+          const content = await fs.readFile(file.path, 'utf-8');
+          setContent(content);
+        }
         setIsLoading(false);
       } catch (err) {
         const errorMessage =

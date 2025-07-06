@@ -2,6 +2,7 @@ import { Spinner, StatusMessage } from '@inkjs/ui';
 import { Box, Text } from 'ink';
 import type React from 'react';
 import type { CliOptions } from './_types.js';
+import { ErrorBoundary } from './components/ErrorBoundary.js';
 import { FileList } from './components/FileList/index.js';
 import { SplitPane } from './components/Layout/index.js';
 import { Preview } from './components/Preview/index.js';
@@ -60,29 +61,37 @@ export function App({ cliOptions }: AppProps): React.JSX.Element {
 
   // メインUI
   return (
-    <Box flexDirection="column" width="100%" height="100%">
-      {/* ヘッダー */}
-      <Box paddingX={1} paddingY={0} borderStyle="single" borderBottom={true}>
-        <Text bold color="blue">
-          Claude Explorer
-        </Text>
-        <Text dimColor> | Interactive File Browser</Text>
-      </Box>
+    <ErrorBoundary>
+      <Box flexDirection="column" width="100%" height="100%">
+        {/* ヘッダー */}
+        <Box paddingX={1} paddingY={0} borderStyle="single" borderBottom={true}>
+          <Text bold color="blue">
+            Claude Explorer
+          </Text>
+          <Text dimColor> | Interactive File Browser</Text>
+        </Box>
 
-      {/* メインコンテンツ */}
-      <Box flexGrow={1}>
-        <SplitPane
-          left={
-            <FileList
-              files={files}
-              selectedFile={selectedFile}
-              onFileSelect={selectFile}
-            />
-          }
-          right={<Preview file={selectedFile} />}
-          leftWidth={40} // 40% : 60% の比率
-        />
+        {/* メインコンテンツ */}
+        <Box flexGrow={1}>
+          <SplitPane
+            left={
+              <ErrorBoundary>
+                <FileList
+                  files={files}
+                  selectedFile={selectedFile}
+                  onFileSelect={selectFile}
+                />
+              </ErrorBoundary>
+            }
+            right={
+              <ErrorBoundary>
+                <Preview file={selectedFile} />
+              </ErrorBoundary>
+            }
+            leftWidth={40} // 40% : 60% の比率
+          />
+        </Box>
       </Box>
-    </Box>
+    </ErrorBoundary>
   );
 }

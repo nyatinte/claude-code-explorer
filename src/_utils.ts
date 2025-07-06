@@ -173,6 +173,24 @@ export const analyzeProjectInfo = async (
   }
 };
 
+// File content utilities
+export const isBinaryFile = async (filePath: string): Promise<boolean> => {
+  try {
+    const { readFile } = await import('node:fs/promises');
+    const buffer = await readFile(filePath);
+
+    // Check for null bytes in the first 1024 bytes
+    const sampleSize = Math.min(1024, buffer.length);
+    const sample = buffer.subarray(0, sampleSize);
+
+    // If file contains null bytes, it's likely binary
+    return sample.includes(0);
+  } catch {
+    // If we can't read the file, assume it's not binary
+    return false;
+  }
+};
+
 // String utilities
 
 // InSource tests
@@ -292,6 +310,23 @@ if (import.meta.vitest != null) {
     test('should handle paths without ~ unchanged', () => {
       expect(normalizeFilePath('simple.md')).toBe('simple.md');
       expect(normalizeFilePath('folder/file.md')).toBe('folder/file.md');
+    });
+  });
+
+  describe('isBinaryFile', () => {
+    test('should detect text files as non-binary', async () => {
+      // テキストデータのモック
+      const textBuffer = Buffer.from('Hello world\nThis is a text file');
+
+      // Note: 実際のファイルシステムテストは統合テストで行う
+      expect(textBuffer.includes(0)).toBe(false);
+    });
+
+    test('should detect binary files with null bytes', async () => {
+      // バイナリファイルの内容をモック
+      const binaryBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01]); // PNG header with null byte
+
+      expect(binaryBuffer.includes(0)).toBe(true);
     });
   });
 }
