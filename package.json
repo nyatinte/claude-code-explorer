@@ -64,6 +64,8 @@
     "commander": "^14.0.0",
     "fdir": "^6.4.6",
     "ink": "^6.0.1",
+    "ink-big-text": "^2.0.0",
+    "ink-gradient": "^3.0.0",
     "marked": "^16.0.0",
     "marked-terminal": "^7.3.0",
     "open": "^10.1.2",
