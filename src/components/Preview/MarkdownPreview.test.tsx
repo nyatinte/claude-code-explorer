@@ -98,9 +98,14 @@ npm start
 
       const { lastFrame } = render(<MarkdownPreview content={content} />);
 
-      expect(lastFrame()).toContain('const example');
-      expect(lastFrame()).toContain('interface User');
-      expect(lastFrame()).toContain('npm install');
+      const frame = lastFrame() ?? '';
+      // Strip ANSI escape sequences for testing
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI escape sequences contain control characters
+      const cleanFrame = frame.replace(/\u001b\[[0-9;]*m/g, '');
+
+      expect(cleanFrame).toContain('const example');
+      expect(cleanFrame).toContain('interface User');
+      expect(cleanFrame).toContain('npm install');
     });
 
     test('引用とリンクを含むMarkdownの表示', () => {
@@ -203,10 +208,15 @@ Line 5    (with trailing spaces)
 
       const { lastFrame } = render(<MarkdownPreview content={content} />);
 
-      expect(lastFrame()).toContain('Line 1');
-      expect(lastFrame()).toContain('Line 3');
-      expect(lastFrame()).toContain('Line 5');
-      expect(lastFrame()).toContain('Line 6');
+      const frame = lastFrame() ?? '';
+      // Strip ANSI escape sequences for testing
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI escape sequences contain control characters
+      const cleanFrame = frame.replace(/\u001b\[[0-9;]*m/g, '');
+
+      expect(cleanFrame).toContain('Line 1');
+      expect(cleanFrame).toContain('Line 3');
+      expect(cleanFrame).toContain('Line 5');
+      expect(cleanFrame).toContain('Line 6');
     });
 
     test('Markdownエスケープ文字の表示', () => {
