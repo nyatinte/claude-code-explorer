@@ -533,9 +533,9 @@ if (import.meta.vitest) {
         await waitForEffects();
 
         // MenuActions component should be visible
-        const frame = lastFrame();
-        expect(frame).toContain('Actions');
-        expect(frame).toContain('Copy'); // Verify menu items
+        const output = lastFrame();
+        expect(output).toContain('Actions');
+        expect(output).toContain('Copy'); // Verify menu items
       });
     });
 

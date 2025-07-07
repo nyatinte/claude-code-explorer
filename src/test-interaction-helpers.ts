@@ -1,0 +1,261 @@
+import { keyboard, typeText } from './test-keyboard-helpers.js';
+import { waitForEffects } from './test-utils.js';
+
+// Type for stdin mock object from ink-testing-library
+type TestStdin = {
+  write: (data: string) => void;
+};
+
+/**
+ * Create test interaction helper for React Ink components
+ * Provides high-level methods for common user interactions
+ */
+export const createTestInteraction = (
+  stdin: TestStdin,
+  lastFrame: () => string | undefined,
+) => {
+  /**
+   * Navigate using arrow keys
+   */
+  const navigateUp = async (times = 1) => {
+    for (let i = 0; i < times; i++) {
+      stdin.write(keyboard.arrowUp);
+      await waitForEffects();
+    }
+  };
+
+  const navigateDown = async (times = 1) => {
+    for (let i = 0; i < times; i++) {
+      stdin.write(keyboard.arrowDown);
+      await waitForEffects();
+    }
+  };
+
+  const navigateLeft = async (times = 1) => {
+    for (let i = 0; i < times; i++) {
+      stdin.write(keyboard.arrowLeft);
+      await waitForEffects();
+    }
+  };
+
+  const navigateRight = async (times = 1) => {
+    for (let i = 0; i < times; i++) {
+      stdin.write(keyboard.arrowRight);
+      await waitForEffects();
+    }
+  };
+
+  /**
+   * Select current item with Enter
+   */
+  const selectItem = async () => {
+    stdin.write(keyboard.enter);
+    await waitForEffects();
+  };
+
+  /**
+   * Cancel/exit with Escape
+   */
+  const exitMode = async () => {
+    stdin.write(keyboard.escape);
+    await waitForEffects();
+  };
+
+  /**
+   * Type search query
+   */
+  const search = async (query: string) => {
+    typeText(stdin, query);
+    await waitForEffects();
+  };
+
+  /**
+   * Clear search by pressing Escape
+   */
+  const clearSearch = async () => {
+    stdin.write(keyboard.escape);
+    await waitForEffects();
+  };
+
+  /**
+   * Execute menu action by shortcut key
+   */
+  const executeShortcut = async (key: keyof typeof keyboard.shortcut) => {
+    stdin.write(keyboard.shortcut[key]);
+    await waitForEffects();
+  };
+
+  /**
+   * Verify content exists in current frame
+   */
+  const verifyContent = (expected: string | string[]) => {
+    const output = lastFrame();
+    const expectations = Array.isArray(expected) ? expected : [expected];
+
+    for (const exp of expectations) {
+      expect(output).toContain(exp);
+    }
+  };
+
+  /**
+   * Verify content does not exist in current frame
+   */
+  const verifyNotContent = (unexpected: string | string[]) => {
+    const output = lastFrame();
+    const unexpectations = Array.isArray(unexpected)
+      ? unexpected
+      : [unexpected];
+
+    for (const unexp of unexpectations) {
+      expect(output).not.toContain(unexp);
+    }
+  };
+
+  /**
+   * Get current frame output
+   */
+  const getOutput = (): string | undefined => {
+    return lastFrame();
+  };
+
+  /**
+   * Verify and return output (for chaining assertions)
+   */
+  const assertOutput = (): string => {
+    const output = lastFrame();
+    expect(output).toBeDefined();
+    return output as string;
+  };
+
+  /**
+   * Common UI flow: Search and select first result
+   */
+  const searchAndSelectFirst = async (query: string) => {
+    await search(query);
+    await navigateDown(); // From search to first result
+    await selectItem();
+  };
+
+  /**
+   * Common UI flow: Navigate to file and open menu
+   */
+  const navigateToFileAndOpenMenu = async (steps: number) => {
+    await navigateDown(steps);
+    await selectItem(); // Open menu
+  };
+
+  /**
+   * Common UI flow: Execute menu action
+   */
+  const executeMenuAction = async (
+    shortcut: keyof typeof keyboard.shortcut,
+  ) => {
+    await executeShortcut(shortcut);
+    await waitForEffects();
+  };
+
+  return {
+    navigateUp,
+    navigateDown,
+    navigateLeft,
+    navigateRight,
+    selectItem,
+    escape: exitMode,
+    search,
+    clearSearch,
+    executeShortcut,
+    verifyContent,
+    verifyNotContent,
+    getOutput,
+    assertOutput,
+    searchAndSelectFirst,
+    navigateToFileAndOpenMenu,
+    executeMenuAction,
+  };
+};
+
+// InSource tests
+if (import.meta.vitest != null) {
+  const { describe, test, expect, vi } = import.meta.vitest;
+
+  describe('createTestInteraction', () => {
+    const createMockSetup = () => {
+      const stdin = { write: vi.fn() };
+      const lastFrame = vi.fn().mockReturnValue('Test content');
+      const interaction = createTestInteraction(stdin, lastFrame);
+      return { stdin, lastFrame, interaction };
+    };
+
+    test('navigation methods write correct keys', async () => {
+      const { stdin, interaction } = createMockSetup();
+
+      await interaction.navigateDown(2);
+      expect(stdin.write).toHaveBeenCalledTimes(2);
+      expect(stdin.write).toHaveBeenCalledWith('\x1B[B');
+
+      stdin.write.mockClear();
+      await interaction.navigateUp();
+      expect(stdin.write).toHaveBeenCalledTimes(1);
+      expect(stdin.write).toHaveBeenCalledWith('\x1B[A');
+    });
+
+    test('search types text correctly', async () => {
+      const { stdin, interaction } = createMockSetup();
+
+      await interaction.search('test query');
+      expect(stdin.write).toHaveBeenCalledTimes(10); // 'test query' = 10 chars
+      expect(stdin.write).toHaveBeenNthCalledWith(1, 't');
+      expect(stdin.write).toHaveBeenNthCalledWith(2, 'e');
+      expect(stdin.write).toHaveBeenNthCalledWith(3, 's');
+      expect(stdin.write).toHaveBeenNthCalledWith(4, 't');
+    });
+
+    test('verifyContent checks frame content', () => {
+      const { lastFrame, interaction } = createMockSetup();
+      lastFrame.mockReturnValue('Hello World');
+
+      // Should not throw
+      interaction.verifyContent('Hello');
+      interaction.verifyContent(['Hello', 'World']);
+
+      // Should throw
+      expect(() => interaction.verifyContent('Goodbye')).toThrow();
+    });
+
+    test('verifyNotContent checks absence of content', () => {
+      const { lastFrame, interaction } = createMockSetup();
+      lastFrame.mockReturnValue('Hello World');
+
+      // Should not throw
+      interaction.verifyNotContent('Goodbye');
+      interaction.verifyNotContent(['Foo', 'Bar']);
+
+      // Should throw
+      expect(() => interaction.verifyNotContent('Hello')).toThrow();
+    });
+
+    test('executeShortcut sends correct key', async () => {
+      const { stdin, interaction } = createMockSetup();
+
+      await interaction.executeShortcut('c');
+      expect(stdin.write).toHaveBeenCalledWith('c');
+
+      stdin.write.mockClear();
+      await interaction.executeShortcut('p');
+      expect(stdin.write).toHaveBeenCalledWith('p');
+    });
+
+    test('complex flow methods work correctly', async () => {
+      const { stdin, interaction } = createMockSetup();
+
+      await interaction.searchAndSelectFirst('test');
+      // Should type 'test' (4 chars) + arrow down + enter
+      expect(stdin.write).toHaveBeenCalledTimes(6);
+
+      stdin.write.mockClear();
+      await interaction.navigateToFileAndOpenMenu(3);
+      // Should arrow down 3 times + enter
+      expect(stdin.write).toHaveBeenCalledTimes(4);
+    });
+  });
+}

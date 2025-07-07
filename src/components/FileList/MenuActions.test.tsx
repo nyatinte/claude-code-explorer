@@ -1,5 +1,7 @@
 import { render } from 'ink-testing-library';
 import { createMockFile } from '../../test-helpers.js';
+import { createTestInteraction } from '../../test-interaction-helpers.js';
+import { keyboard } from '../../test-keyboard-helpers.js';
 import { MenuActions } from './MenuActions/index.js';
 
 if (import.meta.vitest) {
@@ -267,13 +269,57 @@ if (import.meta.vitest) {
         <MenuActions file={file1} onClose={onClose} />,
       );
 
-      expect(lastFrame()).toContain('file1.md');
+      const output1 = lastFrame();
+      expect(output1).toContain('file1.md');
 
       // Re-render with different file
       rerender(<MenuActions file={file2} onClose={onClose} />);
 
-      expect(lastFrame()).toContain('file2.md');
-      expect(lastFrame()).toContain('[C] Copy Content');
+      const output2 = lastFrame();
+      expect(output2).toContain('file2.md');
+      expect(output2).toContain('[C] Copy Content');
+    });
+
+    test('keyboard interaction with menu', async () => {
+      const file = createMockFile('CLAUDE.md', 'claude-md');
+      const onClose = vi.fn();
+
+      const { stdin, lastFrame } = render(
+        <MenuActions file={file} onClose={onClose} />,
+      );
+
+      const interaction = createTestInteraction(stdin, lastFrame);
+
+      // Navigate down through menu items
+      await interaction.navigateDown(2);
+
+      // Verify third item is selected (Copy Path Relative)
+      const output = lastFrame();
+      expect(output).toContain('► [R] Copy Path (Relative)');
+
+      // Navigate back up
+      await interaction.navigateUp();
+
+      // Verify second item is selected
+      const output2 = lastFrame();
+      expect(output2).toContain('► [P] Copy Path (Absolute)');
+    });
+
+    test('shortcut key interaction', async () => {
+      const file = createMockFile('test.md', 'claude-md');
+      const onClose = vi.fn();
+
+      const { stdin, lastFrame } = render(
+        <MenuActions file={file} onClose={onClose} />,
+      );
+
+      // Execute shortcut directly
+      stdin.write(keyboard.shortcut.c);
+
+      // In real implementation, this would trigger the copy action
+      // Here we just verify the menu displays shortcut correctly
+      const output = lastFrame();
+      expect(output).toContain('[C] Copy Content');
     });
   });
 }

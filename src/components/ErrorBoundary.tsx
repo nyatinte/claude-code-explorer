@@ -21,8 +21,12 @@ export class ErrorBoundary extends Component<
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
+  static getDerivedStateFromError(error: unknown): ErrorBoundaryState {
+    const errorObject =
+      error instanceof Error
+        ? error
+        : new Error(String(error || 'Unknown error'));
+    return { hasError: true, error: errorObject };
   }
 
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
