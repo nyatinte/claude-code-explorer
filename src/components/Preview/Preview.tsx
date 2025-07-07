@@ -29,18 +29,18 @@ export function Preview({ file }: PreviewProps): React.JSX.Element {
       try {
         const MAX_PREVIEW_SIZE = 1024 * 1024; // 1MB
 
-        // バイナリファイルかチェック
+        // Check if binary file
         if (await isBinaryFile(file.path)) {
           setError('Binary file cannot be previewed');
           setIsLoading(false);
           return;
         }
 
-        // ファイルサイズをチェック
+        // Check file size
         const stats = await stat(file.path);
 
         if (stats.size > MAX_PREVIEW_SIZE) {
-          // 大きなファイルは最初の部分だけ読み込み
+          // Read only the first part of large files
           const buffer = Buffer.alloc(MAX_PREVIEW_SIZE);
           const fd = await open(file.path, 'r');
           await fd.read(buffer, 0, MAX_PREVIEW_SIZE, 0);
@@ -99,10 +99,10 @@ export function Preview({ file }: PreviewProps): React.JSX.Element {
 
   const fileName = basename(file.path);
 
-  // 内容を行で分割
+  // Split content by lines
   const lines = content.split('\n');
   const totalLines = lines.length;
-  const maxPreviewLines = 12; // ヘッダー分を考慮して12行に制限
+  const maxPreviewLines = 12; // Limit to 12 lines considering header space
   const isContentTruncated = totalLines > maxPreviewLines;
   const previewLines = isContentTruncated
     ? lines.slice(0, maxPreviewLines)
@@ -111,7 +111,7 @@ export function Preview({ file }: PreviewProps): React.JSX.Element {
 
   return (
     <Box flexDirection="column" height="100%">
-      {/* ファイル情報ヘッダー */}
+      {/* File information header */}
       <Box
         marginBottom={1}
         borderStyle="single"
@@ -128,10 +128,10 @@ export function Preview({ file }: PreviewProps): React.JSX.Element {
         </Box>
       </Box>
 
-      {/* プレビュー内容 */}
+      {/* Preview content */}
       <Box
         flexDirection="column"
-        height={15} // 15行に制限して左側の一覧が見切れないようにする
+        height={15} // Limit to 15 lines to prevent left list from being cut off
         overflow="hidden"
       >
         <Box flexDirection="column" paddingRight={1}>
@@ -141,7 +141,7 @@ export function Preview({ file }: PreviewProps): React.JSX.Element {
             <Text>{previewContent}</Text>
           )}
 
-          {/* 省略表示 */}
+          {/* Truncation indicator */}
           {isContentTruncated && (
             <Box marginTop={1}>
               <Text dimColor italic>

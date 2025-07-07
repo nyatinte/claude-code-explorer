@@ -15,7 +15,7 @@ export const FileItem = React.memo(function FileItem({
   isSelected,
   isFocused,
 }: FileItemProps): React.JSX.Element {
-  // ファイル種別バッジの色とラベル
+  // File type badge color and label
   const getFileBadge = (file: ClaudeFileInfo) => {
     switch (file.type) {
       case 'claude-md':
@@ -31,7 +31,7 @@ export const FileItem = React.memo(function FileItem({
     }
   };
 
-  // ファイル種別アイコン
+  // File type icon
   const getFileIcon = (file: ClaudeFileInfo): string => {
     switch (file.type) {
       case 'claude-md':
@@ -47,18 +47,18 @@ export const FileItem = React.memo(function FileItem({
     }
   };
 
-  // ファイル名と親ディレクトリを取得
+  // Get filename and parent directory
   const fileName = basename(file.path);
   const dirPath = dirname(file.path);
   const parentDir = basename(dirPath);
 
-  // 表示用のファイル名（親ディレクトリを含む）
-  // ホームディレクトリの場合は特殊処理
+  // Display name (including parent directory)
+  // Special handling for home directory
   const displayName =
     file.type === 'global-md'
       ? `~/.claude/${fileName}`
       : file.type === 'slash-command'
-        ? fileName.replace('.md', '') // コマンドは.mdを除去
+        ? fileName.replace('.md', '') // Remove .md for commands
         : `${parentDir}/${fileName}`;
 
   const prefix = isFocused ? '► ' : '  ';

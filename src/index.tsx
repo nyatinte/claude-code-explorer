@@ -7,13 +7,13 @@ import { render } from 'ink';
 import type { CliOptions } from './_types.js';
 import { App } from './App.js';
 
-// ESMでのpackage.json読み込み
+// Load package.json in ESM
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
   readFileSync(join(__dirname, '../package.json'), 'utf-8'),
 );
 
-// CLI設定
+// CLI configuration
 program
   .name('claude-explorer')
   .description(
@@ -25,5 +25,5 @@ program
 
 const options = program.opts() as CliOptions;
 
-// Reactアプリをレンダリング（インタラクティブモード）
+// Render React app (interactive mode)
 render(<App cliOptions={options} />);

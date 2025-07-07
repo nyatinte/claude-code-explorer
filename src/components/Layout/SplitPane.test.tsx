@@ -7,21 +7,21 @@ if (import.meta.vitest) {
   const { describe, test, expect } = import.meta.vitest;
 
   describe('SplitPane', () => {
-    test('レンダリング可能', () => {
-      const LeftContent = (): React.JSX.Element => <Text>左側内容</Text>;
-      const RightContent = (): React.JSX.Element => <Text>右側内容</Text>;
+    test('renders correctly', () => {
+      const LeftContent = (): React.JSX.Element => <Text>Left Content</Text>;
+      const RightContent = (): React.JSX.Element => <Text>Right Content</Text>;
 
       const { lastFrame } = render(
         <SplitPane left={<LeftContent />} right={<RightContent />} />,
       );
 
-      expect(lastFrame()).toContain('左側内容');
-      expect(lastFrame()).toContain('右側内容');
+      expect(lastFrame()).toContain('Left Content');
+      expect(lastFrame()).toContain('Right Content');
     });
 
-    test('カスタム幅比率の適用', () => {
-      const LeftContent = (): React.JSX.Element => <Text>左側</Text>;
-      const RightContent = (): React.JSX.Element => <Text>右側</Text>;
+    test('applies custom width ratio', () => {
+      const LeftContent = (): React.JSX.Element => <Text>Left</Text>;
+      const RightContent = (): React.JSX.Element => <Text>Right</Text>;
 
       const { lastFrame } = render(
         <SplitPane
@@ -31,12 +31,12 @@ if (import.meta.vitest) {
         />,
       );
 
-      // レンダリング結果に両側が含まれることを確認
-      expect(lastFrame()).toContain('左側');
-      expect(lastFrame()).toContain('右側');
+      // Verify both sides are included in render output
+      expect(lastFrame()).toContain('Left');
+      expect(lastFrame()).toContain('Right');
     });
 
-    test('デフォルト幅比率(50%)の動作', () => {
+    test('uses default 50% width ratio', () => {
       const LeftContent = (): React.JSX.Element => <Text>Default Left</Text>;
       const RightContent = (): React.JSX.Element => <Text>Default Right</Text>;
 

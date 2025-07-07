@@ -24,7 +24,7 @@ export function App({ cliOptions }: AppProps): React.JSX.Element {
     toggleGroup,
   } = useFileNavigation({ path: cliOptions.path });
 
-  // エラー状態
+  // Error state
   if (error) {
     return (
       <Box flexDirection="column" padding={1}>
@@ -34,12 +34,12 @@ export function App({ cliOptions }: AppProps): React.JSX.Element {
     );
   }
 
-  // ローディング状態
+  // Loading state
   if (isLoading) {
     return <LoadingScreen />;
   }
 
-  // ファイルが見つからない場合
+  // When no files found
   if (files.length === 0) {
     return (
       <Box
@@ -57,11 +57,11 @@ export function App({ cliOptions }: AppProps): React.JSX.Element {
     );
   }
 
-  // メインUI
+  // Main UI
   return (
     <ErrorBoundary>
       <Box flexDirection="column" width="100%" height="100%">
-        {/* ヘッダー */}
+        {/* Header */}
         <Box paddingX={1} paddingY={0} borderStyle="single" borderBottom={true}>
           <Text bold color="blue">
             Claude Explorer
@@ -69,7 +69,7 @@ export function App({ cliOptions }: AppProps): React.JSX.Element {
           <Text dimColor> | Interactive File Browser</Text>
         </Box>
 
-        {/* メインコンテンツ */}
+        {/* Main content */}
         <Box flexGrow={1}>
           <SplitPane
             left={
@@ -88,7 +88,7 @@ export function App({ cliOptions }: AppProps): React.JSX.Element {
                 <Preview file={selectedFile} />
               </ErrorBoundary>
             }
-            leftWidth={40} // 40% : 60% の比率
+            leftWidth={40} // 40% : 60% ratio
           />
         </Box>
       </Box>

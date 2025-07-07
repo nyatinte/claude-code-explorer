@@ -315,15 +315,15 @@ if (import.meta.vitest != null) {
 
   describe('isBinaryFile', () => {
     test('should detect text files as non-binary', async () => {
-      // テキストデータのモック
+      // Mock text data
       const textBuffer = Buffer.from('Hello world\nThis is a text file');
 
-      // Note: 実際のファイルシステムテストは統合テストで行う
+      // Note: Actual file system tests are done in integration tests
       expect(textBuffer.includes(0)).toBe(false);
     });
 
     test('should detect binary files with null bytes', async () => {
-      // バイナリファイルの内容をモック
+      // Mock binary file content
       const binaryBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01]); // PNG header with null byte
 
       expect(binaryBuffer.includes(0)).toBe(true);

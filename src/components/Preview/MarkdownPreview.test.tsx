@@ -6,7 +6,7 @@ if (import.meta.vitest) {
   const { describe, test, expect } = import.meta.vitest;
 
   describe('MarkdownPreview', () => {
-    test('基本的なMarkdownコンテンツの表示', () => {
+    test('displays basic Markdown content', () => {
       const content = createMockFileContent('markdown');
 
       const { lastFrame } = render(<MarkdownPreview content={content} />);
@@ -15,17 +15,17 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('Features');
     });
 
-    test('空のコンテンツの安全な表示', () => {
+    test('safely displays empty content', () => {
       const content = '';
 
       const { lastFrame } = render(<MarkdownPreview content={content} />);
 
-      // 空のコンテンツでもレンダリングエラーが発生しないことを確認
+      // Verify no rendering errors occur with empty content
       expect(lastFrame()).toBeDefined();
       expect(typeof lastFrame()).toBe('string');
     });
 
-    test('見出しを含むMarkdownの表示', () => {
+    test('displays Markdown with headings', () => {
       const content = `# Main Title
 
 ## Subtitle
@@ -42,7 +42,7 @@ Paragraph content under subtitles.`;
       expect(lastFrame()).toContain('Paragraph content under subtitles.');
     });
 
-    test('強調とイタリックを含むMarkdownの表示', () => {
+    test('displays Markdown with bold and italic text', () => {
       const content = `This text contains **bold text**, *italic text*, and ***bold italic text***.
 
 Also includes \`inline code\` formatting.`;
@@ -54,7 +54,7 @@ Also includes \`inline code\` formatting.`;
       expect(lastFrame()).toContain('inline code');
     });
 
-    test('リストを含むMarkdownの表示', () => {
+    test('displays Markdown with lists', () => {
       const content = `## Unordered List
 - Item 1
 - Item 2
@@ -76,7 +76,7 @@ Also includes \`inline code\` formatting.`;
       expect(lastFrame()).toContain('Second item');
     });
 
-    test('コードブロックを含むMarkdownの表示', () => {
+    test('displays Markdown with code blocks', () => {
       const content = `## Code Examples
 
 \`\`\`javascript
@@ -108,7 +108,7 @@ npm start
       expect(cleanFrame).toContain('npm install');
     });
 
-    test('引用とリンクを含むMarkdownの表示', () => {
+    test('displays Markdown with quotes and links', () => {
       const content = `## Quotes and Links
 
 > This is a blockquote.
@@ -125,7 +125,7 @@ And an automatic link: https://github.com`;
       expect(lastFrame()).toContain('https://github.com');
     });
 
-    test('テーブルを含むMarkdownの表示', () => {
+    test('displays Markdown with tables', () => {
       const content = `## Table Example
 
 | Name | Age | City |
@@ -142,7 +142,7 @@ And an automatic link: https://github.com`;
       expect(lastFrame()).toContain('New York');
     });
 
-    test('複雑な構造のMarkdownの表示', () => {
+    test('displays complex structured Markdown', () => {
       const content = createMockFileContent('claude-md');
 
       const { lastFrame } = render(<MarkdownPreview content={content} />);
@@ -153,7 +153,7 @@ And an automatic link: https://github.com`;
       expect(lastFrame()).toContain('TypeScript');
     });
 
-    test('スラッシュコマンド形式のMarkdownの表示', () => {
+    test('displays slash command format Markdown', () => {
       const content = createMockFileContent('slash-command');
 
       const { lastFrame } = render(<MarkdownPreview content={content} />);
@@ -164,7 +164,7 @@ And an automatic link: https://github.com`;
       expect(lastFrame()).toContain('Arguments');
     });
 
-    test('特殊文字を含むMarkdownの表示', () => {
+    test('displays Markdown with special characters', () => {
       const content = `# Title with "quotes" and <brackets> & symbols
 
 Special characters: \`&\`, \`<\`, \`>\`, \`"\`, \`'\`
@@ -179,7 +179,7 @@ HTML entities: &amp; &lt; &gt; &quot;`;
       expect(lastFrame()).toContain('Special characters');
     });
 
-    test('非常に長いコンテンツの表示', () => {
+    test('displays very long content', () => {
       const content = `# Long Document
 
 ${'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(100)}
@@ -197,7 +197,7 @@ ${'Vestibulum tortor quam, feugiat vitae, ultricies eget, tempor sit amet, ante.
       expect(lastFrame()).toContain('Section 2');
     });
 
-    test('改行とスペースの保持', () => {
+    test('preserves line breaks and spaces', () => {
       const content = `Line 1
 
 Line 3 (with empty line above)
@@ -219,7 +219,7 @@ Line 5    (with trailing spaces)
       expect(cleanFrame).toContain('Line 6');
     });
 
-    test('Markdownエスケープ文字の表示', () => {
+    test('displays Markdown escape characters', () => {
       const content = `## Escaped Characters
 
 \\*Not italic\\*
@@ -235,7 +235,7 @@ Line 5    (with trailing spaces)
       expect(lastFrame()).toContain('# Not a heading');
     });
 
-    test('混合コンテンツの表示', () => {
+    test('displays mixed content', () => {
       const content = `# Mixed Content Document
 
 ## Code and Text
@@ -269,7 +269,7 @@ function example() {
       expect(lastFrame()).toContain('console.log');
     });
 
-    test('空行のみのコンテンツ', () => {
+    test('displays content with only empty lines', () => {
       const content = '\n\n\n\n\n';
 
       const { lastFrame } = render(<MarkdownPreview content={content} />);
@@ -278,7 +278,7 @@ function example() {
       expect(typeof lastFrame()).toBe('string');
     });
 
-    test('ホワイトスペースのみのコンテンツ', () => {
+    test('displays content with only whitespace', () => {
       const content = '   \t   \n  \t  \n   ';
 
       const { lastFrame } = render(<MarkdownPreview content={content} />);

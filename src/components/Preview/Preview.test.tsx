@@ -3,7 +3,7 @@ import { render } from 'ink-testing-library';
 import { createMockFile, createMockFileContent } from '../../test-helpers.js';
 import { Preview } from './Preview.js';
 
-// ファイルシステムをモック
+// Mock the file system
 vi.mock('node:fs', () => ({
   promises: {
     readFile: vi.fn(),
@@ -20,13 +20,13 @@ if (import.meta.vitest) {
   });
 
   describe('Preview', () => {
-    test('ファイル未選択時のプレースホルダー表示', () => {
+    test('displays placeholder when no file selected', () => {
       const { lastFrame } = render(<Preview />);
 
       expect(lastFrame()).toContain('Select a file to preview');
     });
 
-    test('ファイル選択時の基本情報表示', () => {
+    test('displays basic file information when selected', () => {
       const file = createMockFile('CLAUDE.md', 'claude-md');
 
       const { lastFrame } = render(<Preview file={file} />);
@@ -36,7 +36,7 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('Type: claude-md');
     });
 
-    test('異なるファイルタイプでの表示', () => {
+    test('displays different file types', () => {
       const file = createMockFile('CLAUDE.local.md', 'claude-local-md');
 
       const { lastFrame } = render(<Preview file={file} />);
@@ -45,7 +45,7 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('Type: claude-local-md');
     });
 
-    test('スラッシュコマンドファイルの表示', () => {
+    test('displays slash command files', () => {
       const file = createMockFile(
         'deploy.md',
         'slash-command',
@@ -69,7 +69,7 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('/.claude/commands/deploy.md');
     });
 
-    test('グローバルタイプファイルの表示', () => {
+    test('displays global type files', () => {
       const file = createMockFile(
         'CLAUDE.md',
         'global-md',
@@ -83,7 +83,7 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('/Users/test/.claude/CLAUDE.md');
     });
 
-    test('ファイル統計情報の表示', () => {
+    test('displays file statistics', () => {
       const file = createMockFile('CLAUDE.md', 'claude-md', '/test/CLAUDE.md', {
         size: 2048,
         lastModified: new Date('2024-01-15T10:30:00Z'),
@@ -91,13 +91,13 @@ if (import.meta.vitest) {
 
       const { lastFrame } = render(<Preview file={file} />);
 
-      // 統計情報の表示を確認
+      // Verify statistics are displayed
       expect(lastFrame()).toContain('Lines:');
       expect(lastFrame()).toContain('Size:');
       expect(lastFrame()).toContain('chars');
     });
 
-    test('ファイル内容の読み込みとMarkdown表示', async () => {
+    test('loads file content and displays Markdown', async () => {
       const file = createMockFile('CLAUDE.md', 'claude-md');
       const mockContent = createMockFileContent('claude-md');
 
@@ -105,23 +105,23 @@ if (import.meta.vitest) {
 
       const { lastFrame } = render(<Preview file={file} />);
 
-      // ファイル読み込みが呼ばれることを確認
-      // 注意: 実際の実装では useEffect で非同期読み込みが行われる
+      // Verify file reading is called
+      // Note: Actual implementation uses useEffect for async loading
       expect(lastFrame()).toBeDefined();
     });
 
-    test('ファイル読み込みエラー時の表示', async () => {
+    test('handles file reading errors', async () => {
       const file = createMockFile('missing.md', 'claude-md');
 
       mockedReadFile.mockRejectedValue(new Error('File not found'));
 
       const { lastFrame } = render(<Preview file={file} />);
 
-      // エラーハンドリングがされていることを確認（実装に依存）
+      // Verify error handling (implementation dependent)
       expect(lastFrame()).toBeDefined();
     });
 
-    test('スラッシュコマンド情報の詳細表示', () => {
+    test('displays detailed slash command information', () => {
       const file = createMockFile(
         'complex-deploy.md',
         'slash-command',
@@ -148,12 +148,12 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('complex-deploy.md');
       expect(lastFrame()).toContain('Type: slash-command');
 
-      // コマンド情報やタグ情報が表示されることを確認（実装に依存）
+      // Verify command and tag information is displayed (implementation dependent)
       const output = lastFrame();
       expect(output).toBeDefined();
     });
 
-    test('大きなファイルサイズでの表示', () => {
+    test('displays large file sizes', () => {
       const file = createMockFile(
         'large-file.md',
         'claude-md',
@@ -170,7 +170,7 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('Size:');
     });
 
-    test('特殊文字を含むファイルパスの表示', () => {
+    test('displays file paths with special characters', () => {
       const file = createMockFile(
         'file with spaces & symbols.md',
         'claude-md',
@@ -185,7 +185,7 @@ if (import.meta.vitest) {
       );
     });
 
-    test('空のコマンドとタグでのスラッシュコマンドファイル', () => {
+    test('displays slash command files with empty commands and tags', () => {
       const file = createMockFile(
         'simple.md',
         'slash-command',
@@ -202,7 +202,7 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('Type: slash-command');
     });
 
-    test('プロジェクト情報を含むClaudeファイル', () => {
+    test('displays Claude files with project information', () => {
       const file = createMockFile(
         'CLAUDE.md',
         'claude-md',
@@ -220,10 +220,10 @@ if (import.meta.vitest) {
 
       expect(lastFrame()).toContain('CLAUDE.md');
       expect(lastFrame()).toContain('Type: claude-md');
-      // プロジェクト情報の表示確認（実装に依存）
+      // Verify project information display (implementation dependent)
     });
 
-    test('レンダリングが複数回行われても安定', () => {
+    test('remains stable across multiple renders', () => {
       const file1 = createMockFile('file1.md', 'claude-md');
       const file2 = createMockFile('file2.md', 'claude-local-md');
 
@@ -232,24 +232,24 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('file1.md');
       expect(lastFrame()).toContain('Type: claude-md');
 
-      // 別のファイルで再レンダリング
+      // Re-render with different file
       rerender(<Preview file={file2} />);
 
       expect(lastFrame()).toContain('file2.md');
-      // rerender後の表示状態を確認（実装の詳細に依存しないように修正）
+      // Verify display state after rerender (avoiding implementation details)
       const output = lastFrame();
       expect(output).toBeDefined();
       expect(output?.length ?? 0).toBeGreaterThan(0);
     });
 
-    test('undefinedファイルから有効ファイルへの切り替え', () => {
+    test('switches from undefined file to valid file', () => {
       const file = createMockFile('test.md', 'claude-md');
 
       const { lastFrame, rerender } = render(<Preview />);
 
       expect(lastFrame()).toContain('Select a file to preview');
 
-      // ファイルを設定して再レンダリング
+      // Re-render with file set
       rerender(<Preview file={file} />);
 
       expect(lastFrame()).toContain('test.md');

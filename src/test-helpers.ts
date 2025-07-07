@@ -2,7 +2,7 @@ import type { ClaudeFileInfo, SlashCommandInfo } from './_types.js';
 import { createClaudeFilePath } from './_types.js';
 
 /**
- * テスト用のClaudeFileInfo作成ヘルパー
+ * Helper to create ClaudeFileInfo for testing
  */
 export const createMockFile = (
   name: string,
@@ -20,7 +20,7 @@ export const createMockFile = (
 });
 
 /**
- * テスト用のSlashCommandInfo作成ヘルパー
+ * Helper to create SlashCommandInfo for testing
  */
 export const createMockSlashCommand = (
   name: string,
@@ -37,7 +37,7 @@ export const createMockSlashCommand = (
 });
 
 /**
- * 一般的なファイルセットのプリセット
+ * Presets for common file sets
  */
 export const mockFilePresets = {
   basic: (): ClaudeFileInfo[] => [
@@ -57,7 +57,7 @@ export const mockFilePresets = {
 };
 
 /**
- * モックファイルの内容を生成
+ * Generate mock file content
  */
 export const createMockFileContent = (
   type: 'claude-md' | 'slash-command' | 'markdown',

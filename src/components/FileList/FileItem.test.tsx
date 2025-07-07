@@ -3,7 +3,7 @@ import type { ClaudeFileInfo } from '../../_types.js';
 import { createClaudeFilePath } from '../../_types.js';
 import { FileItem } from './FileItem.js';
 
-// テスト用のClaudeFileInfo作成ヘルパー
+// Helper to create ClaudeFileInfo for testing
 const createMockFile = (
   name: string,
   type: ClaudeFileInfo['type'],
@@ -21,40 +21,40 @@ if (import.meta.vitest) {
   const { describe, test, expect } = import.meta.vitest;
 
   describe('FileItem', () => {
-    test('CLAUDE.mdファイルの表示', () => {
+    test('displays CLAUDE.md file', () => {
       const file = createMockFile('CLAUDE.md', 'claude-md');
 
       const { lastFrame } = render(
         <FileItem file={file} isSelected={false} isFocused={false} />,
       );
 
-      expect(lastFrame()).toContain('test/CLAUDE.md'); // 親ディレクトリ付き
-      expect(lastFrame()).toContain('📝'); // claude-mdアイコン
+      expect(lastFrame()).toContain('test/CLAUDE.md'); // with parent directory
+      expect(lastFrame()).toContain('📝'); // claude-md icon
     });
 
-    test('CLAUDE.local.mdファイルの表示', () => {
+    test('displays CLAUDE.local.md file', () => {
       const file = createMockFile('CLAUDE.local.md', 'claude-local-md');
 
       const { lastFrame } = render(
         <FileItem file={file} isSelected={false} isFocused={false} />,
       );
 
-      expect(lastFrame()).toContain('test/CLAUDE.local.md'); // 親ディレクトリ付き
-      expect(lastFrame()).toContain('🔒'); // claude-local-mdアイコン
+      expect(lastFrame()).toContain('test/CLAUDE.local.md'); // with parent directory
+      expect(lastFrame()).toContain('🔒'); // claude-local-md icon
     });
 
-    test('スラッシュコマンドファイルの表示', () => {
+    test('displays slash command file', () => {
       const file = createMockFile('test-command.md', 'slash-command');
 
       const { lastFrame } = render(
         <FileItem file={file} isSelected={false} isFocused={false} />,
       );
 
-      expect(lastFrame()).toContain('test-command'); // .md拡張子は削除される
-      expect(lastFrame()).toContain('⚡'); // slash-commandアイコン
+      expect(lastFrame()).toContain('test-command'); // .md extension is removed
+      expect(lastFrame()).toContain('⚡'); // slash-command icon
     });
 
-    test('選択状態の表示', () => {
+    test('displays selected state', () => {
       const file = createMockFile('CLAUDE.md', 'claude-md');
 
       const { lastFrame } = render(
@@ -62,10 +62,10 @@ if (import.meta.vitest) {
       );
 
       expect(lastFrame()).toContain('test/CLAUDE.md');
-      // 選択状態の視覚的表現があることを確認
+      // Verify visual representation of selected state
     });
 
-    test('フォーカス状態の表示', () => {
+    test('displays focused state', () => {
       const file = createMockFile('CLAUDE.md', 'claude-md');
 
       const { lastFrame } = render(
@@ -73,10 +73,10 @@ if (import.meta.vitest) {
       );
 
       expect(lastFrame()).toContain('test/CLAUDE.md');
-      expect(lastFrame()).toContain('► '); // フォーカス時のプレフィックス
+      expect(lastFrame()).toContain('► '); // focus prefix
     });
 
-    test('選択＋フォーカス状態の表示', () => {
+    test('displays selected and focused state', () => {
       const file = createMockFile('CLAUDE.md', 'claude-md');
 
       const { lastFrame } = render(
@@ -84,7 +84,7 @@ if (import.meta.vitest) {
       );
 
       expect(lastFrame()).toContain('test/CLAUDE.md');
-      expect(lastFrame()).toContain('► '); // フォーカス時のプレフィックス
+      expect(lastFrame()).toContain('► '); // focus prefix
     });
   });
 }

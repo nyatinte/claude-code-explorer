@@ -9,16 +9,16 @@ import type {
 import { scanClaudeFiles } from '../claude-md-scanner.js';
 import { scanSlashCommands } from '../slash-command-scanner.js';
 
-// ClaudeFileInfoとSlashCommandInfoを統一するためのユニオン型
+// Union type to unify ClaudeFileInfo and SlashCommandInfo
 type NavigationFile = ClaudeFileInfo;
 
-// SlashCommandInfoをClaudeFileInfo形式に変換
+// Convert SlashCommandInfo to ClaudeFileInfo format
 const convertSlashCommandToFileInfo = (
   command: SlashCommandInfo,
 ): ClaudeFileInfo => ({
   path: command.filePath,
   type: 'slash-command' as const,
-  size: 0, // スラッシュコマンドではサイズ情報がない
+  size: 0, // No size information for slash commands
   lastModified: command.lastModified,
   projectInfo: undefined,
   commands: [
@@ -52,23 +52,23 @@ export function useFileNavigation(
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
 
-  // オブジェクト依存を分解
+  // Destructure object dependencies
   const { path, recursive = true } = options;
 
   useEffect(() => {
-    // ファイルスキャン実行
+    // Execute file scan
     const scanOptions = { recursive, path };
     Promise.all([scanClaudeFiles(scanOptions), scanSlashCommands(scanOptions)])
       .then(([claudeFiles, slashCommands]) => {
-        // スラッシュコマンドをClaudeFileInfo形式に変換
+        // Convert slash commands to ClaudeFileInfo format
         const convertedCommands = slashCommands.map(
           convertSlashCommandToFileInfo,
         );
 
-        // 両方の結果を結合
+        // Combine both results
         const allFiles = [...claudeFiles, ...convertedCommands];
 
-        // ファイルをタイプごとにグループ化
+        // Group files by type
         const groupedFiles = allFiles.reduce<
           Record<ClaudeFileType, NavigationFile[]>
         >(
@@ -82,7 +82,7 @@ export function useFileNavigation(
           {} as Record<ClaudeFileType, NavigationFile[]>,
         );
 
-        // 各グループ内でファイル名でソート
+        // Sort by filename within each group
         Object.values(groupedFiles).forEach((group) => {
           group.sort((a, b) => {
             const aName = a.path.split('/').pop() || '';
@@ -91,7 +91,7 @@ export function useFileNavigation(
           });
         });
 
-        // FileGroup配列を作成（定義済みの順序で）
+        // Create FileGroup array (in predefined order)
         const orderedTypes: ClaudeFileType[] = [
           'claude-md',
           'claude-local-md',
@@ -104,13 +104,13 @@ export function useFileNavigation(
           .map((type) => ({
             type,
             files: groupedFiles[type] || [],
-            isExpanded: true, // デフォルトでは全て展開
+            isExpanded: true, // All expanded by default
           }));
 
         setFileGroups(groups);
         setFiles(allFiles);
 
-        // 最初のファイルを自動選択（最初のグループの最初のファイル）
+        // Auto-select first file (first file of first group)
         if (groups.length > 0 && groups[0] && groups[0].files.length > 0) {
           const firstFile = groups[0].files[0];
           if (firstFile) {
