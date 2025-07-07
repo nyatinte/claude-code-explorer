@@ -33,7 +33,7 @@
     "check:write": "biome check --write .",
     "check:unsafe": "biome check --write --unsafe .",
     "knip": "knip",
-    "ci": "bun run build && bun run check && bun run typecheck && bun run knip && bun run test"
+    "ci": "concurrently --kill-others-on-fail --success all -n \"build,check,typecheck,knip,test\" -c \"cyan,green,yellow,magenta,blue\" \"bun run build\" \"bun run check\" \"bun run typecheck\" \"bun run knip\" \"bun run test\""
   },
   "devDependencies": {
     "@biomejs/biome": "2.0.6",
@@ -41,6 +41,7 @@
     "@types/bun": "^1.2.17",
     "@types/marked-terminal": "^6.1.1",
     "@types/react": "^19.1.8",
+    "concurrently": "^9.2.0",
     "es-toolkit": "^1.39.5",
     "fs-fixture": "^2.8.1",
     "ink-testing-library": "^4.0.0",
