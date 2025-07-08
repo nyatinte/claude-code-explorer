@@ -20,6 +20,14 @@
 - 🎨 **Terminal UI** - Beautiful React Ink interface with proper focus management
 - 📝 **Markdown Preview** - Renders CLAUDE.md files with syntax highlighting
 
+## Screenshots
+
+<div align="center">
+  <img src="assets/thumbnail.png" alt="Claude Explorer Thumbnail" width="600">
+  <br><br>
+  <img src="assets/screenshot.png" alt="Claude Explorer Screenshot" width="800">
+</div>
+
 ## Target Files
 
 Claude Explorer automatically discovers these configuration files:
