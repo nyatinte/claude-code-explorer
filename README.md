@@ -4,6 +4,19 @@
   <img src="assets/icon.svg" alt="Claude Explorer Icon" width="128" height="128">
   <br><br>
   <strong>Interactive CLI tool for exploring and managing Claude Code settings and slash commands</strong>
+  <br><br>
+  <a href="https://www.npmjs.com/package/claude-code-explorer">
+    <img src="https://img.shields.io/npm/v/claude-code-explorer.svg" alt="npm version">
+  </a>
+  <a href="https://www.npmjs.com/package/claude-code-explorer">
+    <img src="https://img.shields.io/npm/dm/claude-code-explorer.svg" alt="npm downloads">
+  </a>
+  <a href="https://github.com/nyante/claude-code-explorer/blob/main/LICENSE">
+    <img src="https://img.shields.io/npm/l/claude-code-explorer.svg" alt="license">
+  </a>
+  <a href="https://github.com/nyante/claude-code-explorer">
+    <img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="node version">
+  </a>
 </div>
 
 ## Overview
@@ -39,20 +52,40 @@ Claude Explorer automatically discovers these configuration files:
 
 ## Installation
 
-### Recommended: Direct execution
+### Quick Start (Recommended)
+
+No installation required! Run directly with:
 
 ```bash
-# Run without installing
+# Using Bun (fastest)
 bunx claude-code-explorer
-# or
+
+# Using npm
 npx claude-code-explorer
+
+# Using pnpm
+pnpm dlx claude-code-explorer
 ```
 
-### Optional: Global installation
+### Global Installation
+
+For frequent use, install globally:
 
 ```bash
+# npm
 npm install -g claude-code-explorer
-# Then run anywhere
+
+# Bun
+bun install -g claude-code-explorer
+
+
+# pnpm
+pnpm add -g claude-code-explorer
+```
+
+Then run from anywhere:
+
+```bash
 claude-code-explorer
 ```
 
@@ -76,17 +109,34 @@ claude-code-explorer --path <path>      # Specify directory to scan
 ### Examples
 
 ```bash
-# Interactive exploration of current directory
-claude-code-explorer
+# Launch in current directory
+bunx claude-code-explorer
 
-# Scan specific project directory
-claude-code-explorer --path /path/to/project
+# Scan specific project
+bunx claude-code-explorer --path ~/my-project
+
+# Quick exploration without installation
+npx claude-code-explorer
 
 # Show help
-claude-code-explorer --help
+bunx claude-code-explorer --help
 
 # Show version
-claude-code-explorer --version
+bunx claude-code-explorer --version
+```
+
+### Common Use Cases
+
+```bash
+# Find all Claude configuration in your workspace
+cd ~/workspace
+bunx claude-code-explorer
+
+# Check Claude settings in a specific project
+bunx claude-code-explorer --path ./my-project
+
+# Explore global Claude configuration
+bunx claude-code-explorer --path ~/.claude
 ```
 
 ### Development Mode
