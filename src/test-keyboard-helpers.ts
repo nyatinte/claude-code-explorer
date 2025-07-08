@@ -76,32 +76,6 @@ export const typeKeys = (stdin: TestStdin, ...keys: string[]): void => {
   keys.forEach((key) => stdin.write(key));
 };
 
-/**
- * Navigate using arrow keys
- */
-export const navigate = {
-  up: (stdin: TestStdin, times = 1) => {
-    for (let i = 0; i < times; i++) {
-      stdin.write(keyboard.arrowUp);
-    }
-  },
-  down: (stdin: TestStdin, times = 1) => {
-    for (let i = 0; i < times; i++) {
-      stdin.write(keyboard.arrowDown);
-    }
-  },
-  left: (stdin: TestStdin, times = 1) => {
-    for (let i = 0; i < times; i++) {
-      stdin.write(keyboard.arrowLeft);
-    }
-  },
-  right: (stdin: TestStdin, times = 1) => {
-    for (let i = 0; i < times; i++) {
-      stdin.write(keyboard.arrowRight);
-    }
-  },
-};
-
 // InSource tests
 if (import.meta.vitest != null) {
   const { describe, test, expect, vi } = import.meta.vitest;
@@ -133,19 +107,6 @@ if (import.meta.vitest != null) {
       expect(stdin.write).toHaveBeenCalledTimes(2);
       expect(stdin.write).toHaveBeenNthCalledWith(1, '\x1B[B');
       expect(stdin.write).toHaveBeenNthCalledWith(2, '\r');
-    });
-
-    test('navigate helpers work correctly', () => {
-      const stdin = { write: vi.fn() };
-
-      navigate.down(stdin, 3);
-      expect(stdin.write).toHaveBeenCalledTimes(3);
-      expect(stdin.write).toHaveBeenCalledWith('\x1B[B');
-
-      stdin.write.mockClear();
-      navigate.up(stdin, 2);
-      expect(stdin.write).toHaveBeenCalledTimes(2);
-      expect(stdin.write).toHaveBeenCalledWith('\x1B[A');
     });
   });
 }

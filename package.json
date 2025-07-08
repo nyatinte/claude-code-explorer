@@ -62,8 +62,7 @@
     "type-fest": "^4.41.0",
     "typescript": "^5.7.2",
     "vitest": "^3.2.4",
-    "xdg-basedir": "^5.1.0",
-    "zod": "^3.25.67"
+    "xdg-basedir": "^5.1.0"
   },
   "overrides": {
     "vite": "npm:rolldown-vite@latest"
@@ -78,9 +77,7 @@
     "marked": "^16.0.0",
     "marked-terminal": "^7.3.0",
     "open": "^10.1.2",
-    "react": "^19.1.0"
-  },
-  "trustedDependencies": [
-    "fd-find"
-  ]
+    "react": "^19.1.0",
+    "zod": "^3.25.0"
+  }
 }

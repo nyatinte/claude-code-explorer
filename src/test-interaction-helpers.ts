@@ -1,4 +1,5 @@
 import { keyboard, typeText } from './test-keyboard-helpers.js';
+import { createNavigation } from './test-navigation.js';
 import { waitForEffects } from './test-utils.js';
 
 // Type for stdin mock object from ink-testing-library
@@ -14,52 +15,25 @@ export const createTestInteraction = (
   stdin: TestStdin,
   lastFrame: () => string | undefined,
 ) => {
+  const nav = createNavigation(stdin);
+
   /**
-   * Navigate using arrow keys
+   * Navigate using arrow keys (async versions)
    */
-  const navigateUp = async (times = 1) => {
-    for (let i = 0; i < times; i++) {
-      stdin.write(keyboard.arrowUp);
-      await waitForEffects();
-    }
-  };
-
-  const navigateDown = async (times = 1) => {
-    for (let i = 0; i < times; i++) {
-      stdin.write(keyboard.arrowDown);
-      await waitForEffects();
-    }
-  };
-
-  const navigateLeft = async (times = 1) => {
-    for (let i = 0; i < times; i++) {
-      stdin.write(keyboard.arrowLeft);
-      await waitForEffects();
-    }
-  };
-
-  const navigateRight = async (times = 1) => {
-    for (let i = 0; i < times; i++) {
-      stdin.write(keyboard.arrowRight);
-      await waitForEffects();
-    }
-  };
+  const navigateUp = (times = 1) => nav.up({ async: true, times });
+  const navigateDown = (times = 1) => nav.down({ async: true, times });
+  const navigateLeft = (times = 1) => nav.left({ async: true, times });
+  const navigateRight = (times = 1) => nav.right({ async: true, times });
 
   /**
    * Select current item with Enter
    */
-  const selectItem = async () => {
-    stdin.write(keyboard.enter);
-    await waitForEffects();
-  };
+  const selectItem = () => nav.enter({ async: true });
 
   /**
    * Cancel/exit with Escape
    */
-  const exitMode = async () => {
-    stdin.write(keyboard.escape);
-    await waitForEffects();
-  };
+  const exitMode = () => nav.escape({ async: true });
 
   /**
    * Type search query
@@ -127,33 +101,6 @@ export const createTestInteraction = (
     return output as string;
   };
 
-  /**
-   * Common UI flow: Search and select first result
-   */
-  const searchAndSelectFirst = async (query: string) => {
-    await search(query);
-    await navigateDown(); // From search to first result
-    await selectItem();
-  };
-
-  /**
-   * Common UI flow: Navigate to file and open menu
-   */
-  const navigateToFileAndOpenMenu = async (steps: number) => {
-    await navigateDown(steps);
-    await selectItem(); // Open menu
-  };
-
-  /**
-   * Common UI flow: Execute menu action
-   */
-  const executeMenuAction = async (
-    shortcut: keyof typeof keyboard.shortcut,
-  ) => {
-    await executeShortcut(shortcut);
-    await waitForEffects();
-  };
-
   return {
     navigateUp,
     navigateDown,
@@ -168,9 +115,6 @@ export const createTestInteraction = (
     verifyNotContent,
     getOutput,
     assertOutput,
-    searchAndSelectFirst,
-    navigateToFileAndOpenMenu,
-    executeMenuAction,
   };
 };
 
@@ -243,19 +187,6 @@ if (import.meta.vitest != null) {
       stdin.write.mockClear();
       await interaction.executeShortcut('p');
       expect(stdin.write).toHaveBeenCalledWith('p');
-    });
-
-    test('complex flow methods work correctly', async () => {
-      const { stdin, interaction } = createMockSetup();
-
-      await interaction.searchAndSelectFirst('test');
-      // Should type 'test' (4 chars) + arrow down + enter
-      expect(stdin.write).toHaveBeenCalledTimes(6);
-
-      stdin.write.mockClear();
-      await interaction.navigateToFileAndOpenMenu(3);
-      // Should arrow down 3 times + enter
-      expect(stdin.write).toHaveBeenCalledTimes(4);
     });
   });
 }

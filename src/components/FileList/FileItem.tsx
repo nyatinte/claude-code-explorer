@@ -2,6 +2,7 @@ import { basename, dirname } from 'node:path';
 import { Badge } from '@inkjs/ui';
 import { Box, Text } from 'ink';
 import React from 'react';
+import { match } from 'ts-pattern';
 import type { ClaudeFileInfo } from '../../_types.js';
 
 type FileItemProps = {
@@ -17,34 +18,30 @@ export const FileItem = React.memo(function FileItem({
 }: FileItemProps): React.JSX.Element {
   // File type badge color and label
   const getFileBadge = (file: ClaudeFileInfo) => {
-    switch (file.type) {
-      case 'claude-md':
-        return { color: 'blue' as const, label: 'PROJECT' };
-      case 'claude-local-md':
-        return { color: 'yellow' as const, label: 'LOCAL' };
-      case 'slash-command':
-        return { color: 'green' as const, label: 'COMMAND' };
-      case 'global-md':
-        return { color: 'magenta' as const, label: 'GLOBAL' };
-      default:
-        return { color: 'gray' as const, label: 'FILE' };
-    }
+    return match(file.type)
+      .with('claude-md', () => ({ color: 'blue' as const, label: 'PROJECT' }))
+      .with('claude-local-md', () => ({
+        color: 'yellow' as const,
+        label: 'LOCAL',
+      }))
+      .with('slash-command', () => ({
+        color: 'green' as const,
+        label: 'COMMAND',
+      }))
+      .with('global-md', () => ({ color: 'magenta' as const, label: 'GLOBAL' }))
+      .with('unknown', () => ({ color: 'gray' as const, label: 'FILE' }))
+      .exhaustive();
   };
 
   // File type icon
   const getFileIcon = (file: ClaudeFileInfo): string => {
-    switch (file.type) {
-      case 'claude-md':
-        return '📝';
-      case 'claude-local-md':
-        return '🔒';
-      case 'slash-command':
-        return '⚡';
-      case 'global-md':
-        return '🌐';
-      default:
-        return '📄';
-    }
+    return match(file.type)
+      .with('claude-md', () => '📝')
+      .with('claude-local-md', () => '🔒')
+      .with('slash-command', () => '⚡')
+      .with('global-md', () => '🌐')
+      .with('unknown', () => '📄')
+      .exhaustive();
   };
 
   // Get filename and parent directory

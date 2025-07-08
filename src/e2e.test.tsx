@@ -3,7 +3,7 @@ import type { ClaudeFilePath } from './_types.js';
 import { App } from './App.js';
 import { createMockFile } from './test-helpers.js';
 import { createTestInteraction } from './test-interaction-helpers.js';
-import { navigate, typeKeys } from './test-keyboard-helpers.js';
+import { typeKeys } from './test-keyboard-helpers.js';
 import { waitForEffects } from './test-utils.js';
 
 // Mock the file scanners
@@ -460,17 +460,15 @@ if (import.meta.vitest) {
 
       await waitForEffects();
 
-      // Rapid interactions - using navigate helper
-      navigate.down(stdin, 2);
-      await waitForEffects();
+      // Rapid interactions
+      await interaction.navigateDown(2);
       await interaction.selectItem();
-      navigate.down(stdin);
-      await waitForEffects();
+      await interaction.navigateDown();
       await interaction.selectItem();
       typeKeys(stdin, 'p');
       await waitForEffects();
       await interaction.escape();
-      navigate.up(stdin);
+      await interaction.navigateUp();
 
       // Wait for async operations
       await waitForEffects();

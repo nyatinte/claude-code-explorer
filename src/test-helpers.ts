@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import type { ClaudeFileInfo, SlashCommandInfo } from './_types.js';
 import { createClaudeFilePath } from './_types.js';
 
@@ -62,9 +63,10 @@ export const mockFilePresets = {
 export const createMockFileContent = (
   type: 'claude-md' | 'slash-command' | 'markdown',
 ) => {
-  switch (type) {
-    case 'claude-md':
-      return `# CLAUDE.md
+  return match(type)
+    .with(
+      'claude-md',
+      () => `# CLAUDE.md
 
 ## Project Configuration
 
@@ -73,10 +75,11 @@ This is a test Claude configuration file.
 ### Development Rules
 - Use TypeScript strict mode
 - Follow React Ink patterns
-`;
-
-    case 'slash-command':
-      return `# Deploy Command
+`,
+    )
+    .with(
+      'slash-command',
+      () => `# Deploy Command
 
 Deploys the application to production.
 
@@ -85,10 +88,11 @@ Deploys the application to production.
 
 ## Arguments
 - environment: Target environment (staging, production)
-`;
-
-    case 'markdown':
-      return `# Test Document
+`,
+    )
+    .with(
+      'markdown',
+      () => `# Test Document
 
 This is a **test** markdown document with *formatting*.
 
@@ -101,9 +105,7 @@ This is a **test** markdown document with *formatting*.
 \`\`\`typescript
 const example = "Hello World";
 \`\`\`
-`;
-
-    default:
-      return 'Mock file content';
-  }
+`,
+    )
+    .exhaustive();
 };

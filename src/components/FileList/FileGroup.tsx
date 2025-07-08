@@ -1,5 +1,6 @@
 import { Box, Text } from 'ink';
 import React from 'react';
+import { match } from 'ts-pattern';
 import type { ClaudeFileType } from '../../_types.js';
 
 type FileGroupProps = {
@@ -10,33 +11,23 @@ type FileGroupProps = {
 };
 
 const getGroupLabel = (type: ClaudeFileType): string => {
-  switch (type) {
-    case 'claude-md':
-      return 'PROJECT';
-    case 'claude-local-md':
-      return 'LOCAL';
-    case 'slash-command':
-      return 'COMMAND';
-    case 'global-md':
-      return 'GLOBAL';
-    default:
-      return 'OTHER';
-  }
+  return match(type)
+    .with('claude-md', () => 'PROJECT')
+    .with('claude-local-md', () => 'LOCAL')
+    .with('slash-command', () => 'COMMAND')
+    .with('global-md', () => 'GLOBAL')
+    .with('unknown', () => 'OTHER')
+    .exhaustive();
 };
 
 const getGroupColor = (type: ClaudeFileType): string => {
-  switch (type) {
-    case 'claude-md':
-      return 'blue';
-    case 'claude-local-md':
-      return 'yellow';
-    case 'slash-command':
-      return 'green';
-    case 'global-md':
-      return 'magenta';
-    default:
-      return 'gray';
-  }
+  return match(type)
+    .with('claude-md', () => 'blue')
+    .with('claude-local-md', () => 'yellow')
+    .with('slash-command', () => 'green')
+    .with('global-md', () => 'magenta')
+    .with('unknown', () => 'gray')
+    .exhaustive();
 };
 
 export const FileGroup = React.memo(function FileGroup({

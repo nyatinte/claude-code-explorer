@@ -1,5 +1,4 @@
-import { existsSync } from 'node:fs';
-import { readFile, stat } from 'node:fs/promises';
+import type { Stats } from 'node:fs';
 import { dirname } from 'node:path';
 import { CLAUDE_FILE_PATTERNS, FILE_SIZE_LIMITS } from './_consts.ts';
 import type {
@@ -16,6 +15,7 @@ import {
   extractTagsFromContent,
   validateClaudeMdContent,
 } from './_utils.ts';
+import { BaseFileScanner } from './base-file-scanner.ts';
 import { findClaudeFiles } from './fast-scanner.ts';
 
 export const scanClaudeFiles = async (
@@ -105,26 +105,15 @@ const getSearchPatterns = (
   return patterns;
 };
 
-const processClaudeFile = async (
-  filePath: string,
-): Promise<ClaudeFileInfo | null> => {
-  try {
-    // Check if file exists and get stats
-    if (!existsSync(filePath)) {
-      return null;
-    }
+class ClaudeMdScanner extends BaseFileScanner<ClaudeFileInfo> {
+  protected readonly maxFileSize = FILE_SIZE_LIMITS.MAX_CLAUDE_MD_SIZE;
+  protected readonly fileType = 'Claude.md';
 
-    const stats = await stat(filePath);
-
-    // Skip if file is too large
-    if (stats.size > FILE_SIZE_LIMITS.MAX_CLAUDE_MD_SIZE) {
-      console.warn(`File too large, skipping: ${filePath}`);
-      return null;
-    }
-
-    // Read file content
-    const content = await readFile(filePath, 'utf-8');
-
+  protected async parseContent(
+    filePath: string,
+    content: string,
+    stats: Stats,
+  ): Promise<ClaudeFileInfo | null> {
     // Validate content
     if (!validateClaudeMdContent(content)) {
       console.warn(`Invalid Claude.md content, skipping: ${filePath}`);
@@ -154,11 +143,11 @@ const processClaudeFile = async (
       commands,
       tags,
     };
-  } catch (error) {
-    console.warn(`Failed to process file ${filePath}:`, error);
-    return null;
   }
-};
+}
+
+const scanner = new ClaudeMdScanner();
+const processClaudeFile = (filePath: string) => scanner.processFile(filePath);
 
 // Removed unused function _findGlobalClaudeFiles
 

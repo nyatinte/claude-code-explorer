@@ -1,6 +1,7 @@
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { match, P } from 'ts-pattern';
+import { z } from 'zod/v4';
 import {
   ERROR_MESSAGES,
   FRAMEWORK_PATTERNS,
@@ -9,7 +10,7 @@ import {
   SCRIPT_PATTERNS,
 } from './_consts.ts';
 import type { ClaudeFilePath, ClaudeFileType, ProjectInfo } from './_types.ts';
-import { safeCreateClaudeFilePath } from './_types.ts';
+import { createClaudeFilePath } from './_types.ts';
 
 // File path utilities
 export const parseSlashCommandName = (fileName: string): string => {
@@ -21,12 +22,11 @@ const normalizeFilePath = (filePath: string): ClaudeFilePath => {
     ? filePath.replace('~', homedir())
     : filePath;
 
-  const claudePath = safeCreateClaudeFilePath(normalized);
-  if (!claudePath) {
+  try {
+    return createClaudeFilePath(normalized);
+  } catch {
     throw new Error(`Invalid file path: ${filePath}`);
   }
-
-  return claudePath;
 };
 
 export const getFileScope = (filePath: string): 'project' | 'user' => {
@@ -102,6 +102,17 @@ export const extractCommandsFromContent = (
   return commands;
 };
 
+// Zod schemas for external data validation
+const PackageJsonSchema = z
+  .object({
+    name: z.string().optional(),
+    version: z.string().optional(),
+    dependencies: z.record(z.string(), z.string()).optional(),
+    devDependencies: z.record(z.string(), z.string()).optional(),
+    scripts: z.record(z.string(), z.string()).optional(),
+  })
+  .passthrough();
+
 // Project analysis
 export const analyzeProjectInfo = async (
   directoryPath: string,
@@ -120,7 +131,8 @@ export const analyzeProjectInfo = async (
     if (existsSync(packageJsonPath)) {
       try {
         const packageContent = await readFile(packageJsonPath, 'utf-8');
-        const packageJson = JSON.parse(packageContent);
+        const rawPackageJson = JSON.parse(packageContent);
+        const packageJson = PackageJsonSchema.parse(rawPackageJson);
 
         projectInfo = {
           ...projectInfo,

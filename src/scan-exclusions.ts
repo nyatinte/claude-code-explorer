@@ -199,20 +199,19 @@ const PARANOID_EXCLUSIONS = [
   'sys',
 ] as const;
 
+import { match } from 'ts-pattern';
+
 /**
  * Get exclusion patterns based on security level
  */
 const getExclusionPatterns = (
   level: 'default' | 'conservative' | 'paranoid' = 'default',
 ) => {
-  switch (level) {
-    case 'conservative':
-      return CONSERVATIVE_EXCLUSIONS;
-    case 'paranoid':
-      return PARANOID_EXCLUSIONS;
-    default:
-      return DEFAULT_EXCLUSIONS;
-  }
+  return match(level)
+    .with('conservative', () => CONSERVATIVE_EXCLUSIONS)
+    .with('paranoid', () => PARANOID_EXCLUSIONS)
+    .with('default', () => DEFAULT_EXCLUSIONS)
+    .exhaustive();
 };
 
 /**

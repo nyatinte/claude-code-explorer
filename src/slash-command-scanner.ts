@@ -1,11 +1,12 @@
+import type { Stats } from 'node:fs';
 import { existsSync } from 'node:fs';
-import { readFile, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { FILE_SIZE_LIMITS } from './_consts.ts';
 import type { ScanOptions, SlashCommandInfo } from './_types.ts';
 import { createClaudeFilePath } from './_types.ts';
 import { getFileScope, parseSlashCommandName } from './_utils.ts';
+import { BaseFileScanner } from './base-file-scanner.ts';
 import { findSlashCommands } from './fast-scanner.ts';
 
 export const scanSlashCommands = async (
@@ -67,25 +68,15 @@ const getSlashCommandPatterns = (recursive = true): string[] => {
   ];
 };
 
-const processSlashCommandFile = async (
-  filePath: string,
-): Promise<SlashCommandInfo | null> => {
-  try {
-    if (!existsSync(filePath)) {
-      return null;
-    }
+class SlashCommandScanner extends BaseFileScanner<SlashCommandInfo> {
+  protected readonly maxFileSize = FILE_SIZE_LIMITS.MAX_SLASH_COMMAND_SIZE;
+  protected readonly fileType = 'Slash command';
 
-    const stats = await stat(filePath);
-
-    // Skip if file is too large
-    if (stats.size > FILE_SIZE_LIMITS.MAX_SLASH_COMMAND_SIZE) {
-      console.warn(`Slash command file too large, skipping: ${filePath}`);
-      return null;
-    }
-
-    // Read file content
-    const content = await readFile(filePath, 'utf-8');
-
+  protected async parseContent(
+    filePath: string,
+    content: string,
+    stats: Stats,
+  ): Promise<SlashCommandInfo | null> {
     // Basic validation - slash command files should contain some content
     if (content.trim().length === 0) {
       return null;
@@ -116,11 +107,12 @@ const processSlashCommandFile = async (
       filePath: createClaudeFilePath(filePath),
       lastModified: stats.mtime,
     };
-  } catch (error) {
-    console.warn(`Failed to process slash command file ${filePath}:`, error);
-    return null;
   }
-};
+}
+
+const scanner = new SlashCommandScanner();
+const processSlashCommandFile = (filePath: string) =>
+  scanner.processFile(filePath);
 
 const getRelativeCommandPath = (filePath: string): string => {
   // Extract path relative to .claude/commands or commands directory
@@ -171,32 +163,6 @@ const hasCommandArguments = (content: string): boolean => {
   ];
 
   return argumentPatterns.some((pattern) => pattern.test(content));
-};
-
-// Find slash commands by name
-const findSlashCommandByName = async (
-  commandName: string,
-): Promise<SlashCommandInfo | null> => {
-  const allCommands = await scanSlashCommands({ recursive: true });
-  return allCommands.find((cmd) => cmd.name === commandName) || null;
-};
-
-// Get all available slash commands grouped by namespace
-const getSlashCommandsByNamespace = async (): Promise<
-  Map<string, SlashCommandInfo[]>
-> => {
-  const allCommands = await scanSlashCommands({ recursive: true });
-  const grouped = new Map<string, SlashCommandInfo[]>();
-
-  for (const command of allCommands) {
-    const namespace = command.namespace || 'global';
-    if (!grouped.has(namespace)) {
-      grouped.set(namespace, []);
-    }
-    grouped.get(namespace)?.push(command);
-  }
-
-  return grouped;
 };
 
 // InSource tests
@@ -287,44 +253,6 @@ if (import.meta.vitest != null) {
     test('should return false for plain text', () => {
       expect(hasCommandArguments('Simple command description')).toBe(false);
       expect(hasCommandArguments('Just some text')).toBe(false);
-    });
-  });
-
-  describe('findSlashCommandByName', () => {
-    test('should find command by exact name match', async () => {
-      // Create test fixture with fs-fixture
-      const { createFixture } = await import('fs-fixture');
-      const fixture = await createFixture({
-        '.claude/commands/deploy.md': '# Deploy Command\nDeploy to production',
-      });
-
-      try {
-        const result = await findSlashCommandByName('deploy');
-        // For now, just test that function doesn't throw
-        expect(typeof result).toBe('object');
-      } finally {
-        await fixture.rm();
-      }
-    });
-  });
-
-  describe('getSlashCommandsByNamespace', () => {
-    test('should group commands by namespace', async () => {
-      // Create test fixture with fs-fixture
-      const { createFixture } = await import('fs-fixture');
-      const fixture = await createFixture({
-        '.claude/commands/git/commit.md': '# Git Commit\nCommit changes',
-        '.claude/commands/deploy.md': '# Deploy\nDeploy application',
-      });
-
-      try {
-        const grouped = await getSlashCommandsByNamespace();
-        expect(grouped instanceof Map).toBe(true);
-        // Test that we get a Map back, specific contents may vary
-        expect(grouped.size >= 0).toBe(true);
-      } finally {
-        await fixture.rm();
-      }
     });
   });
 }
