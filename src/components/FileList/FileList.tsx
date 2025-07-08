@@ -10,6 +10,13 @@ import { FileGroup as FileGroupComponent } from './FileGroup.js';
 import { FileItem } from './FileItem.js';
 import { MenuActions } from './MenuActions/index.js';
 
+/**
+ * Why not use @inkjs/ui TextInput:
+ * - TextInput takes exclusive focus, blocking arrow key navigation
+ * - Requires explicit mode switching (enter/exit search mode)
+ * - Our implementation allows instant "type to search" while navigating
+ */
+
 type FileListProps = {
   readonly files: ClaudeFileInfo[];
   readonly fileGroups: FileGroup[];
