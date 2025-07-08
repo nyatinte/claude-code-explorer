@@ -2,7 +2,7 @@
 
 ## 概要
 
-Claude Explorerは現在インタラクティブTUIのみの対応となっているが、基本的なCLIオプション（`--help`, `--version`, `--path`）を追加し、ユーザビリティを向上させる。
+Claude Code Explorerは現在インタラクティブTUIのみの対応となっているが、基本的なCLIオプション（`--help`, `--version`, `--path`）を追加し、ユーザビリティを向上させる。
 
 ## 現在の状況
 

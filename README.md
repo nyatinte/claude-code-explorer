@@ -1,7 +1,7 @@
-# Claude Explorer
+# Claude Code Explorer
 
 <div align="center">
-  <img src="assets/icon.svg" alt="Claude Explorer Icon" width="128" height="128">
+  <img src="assets/icon.svg" alt="Claude Code Explorer Icon" width="128" height="128">
   <br><br>
   <strong>Interactive CLI tool for exploring and managing Claude Code settings and slash commands</strong>
   <br><br>
@@ -21,7 +21,7 @@
 
 ## Overview
 
-**Claude Explorer** is a React Ink-based CLI tool that provides an interactive terminal interface for discovering, previewing, and managing Claude Code configuration files and slash commands. Navigate through your codebase to find CLAUDE.md files, slash command definitions, and other Claude-related configurations with a beautiful terminal UI.
+**Claude Code Explorer** is a React Ink-based CLI tool that provides an interactive terminal interface for discovering, previewing, and managing Claude Code configuration files and slash commands. Navigate through your codebase to find CLAUDE.md files, slash command definitions, and other Claude-related configurations with a beautiful terminal UI.
 
 ## Features
 
@@ -36,14 +36,14 @@
 ## Screenshots
 
 <div align="center">
-  <img src="assets/thumbnail.png" alt="Claude Explorer Thumbnail" width="600">
+  <img src="assets/thumbnail.png" alt="Claude Code Explorer Thumbnail" width="600">
   <br><br>
-  <img src="assets/screenshot.png" alt="Claude Explorer Screenshot" width="800">
+  <img src="assets/screenshot.png" alt="Claude Code Explorer Screenshot" width="800">
 </div>
 
 ## Target Files
 
-Claude Explorer automatically discovers these configuration files:
+Claude Code Explorer automatically discovers these configuration files:
 
 - **CLAUDE.md** → Project-level configuration (most common)
 - **CLAUDE.local.md** → Local overrides (gitignored)

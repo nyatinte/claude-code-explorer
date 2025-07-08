@@ -121,7 +121,7 @@ if (import.meta.vitest) {
       interaction.verifyContent('Claude Files (5)'); // 3 claude files + 2 commands
 
       // Verify header is shown
-      interaction.verifyContent('Claude Explorer');
+      interaction.verifyContent('Claude Code Explorer');
 
       // WORKAROUND: The initial state might be problematic
       // Let's try to get into a known good state first
