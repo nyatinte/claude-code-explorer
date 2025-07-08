@@ -7,4 +7,8 @@ export default defineConfig({
   banner: { js: '#!/usr/bin/env node' },
   external: ['ink', 'react'],
   jsx: 'automatic',
+  outDir: 'dist',
+  clean: true,
+  dts: true,
+  publint: true,
 });
