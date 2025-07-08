@@ -257,3 +257,49 @@ bun run ci                    # Runs build + check + typecheck + knip + test in 
 - Use `bun run test:watch` during development
 - Run `bun run check:write` frequently to auto-fix formatting
 - Verify with `bun run ci` before considering task complete
+
+## Release Management
+
+### npm Publishing Setup
+
+The project is configured for automated npm publishing via GitHub Actions:
+
+- **Version Management**: Uses `bumpp` for interactive version bumping
+- **Release Workflow**: Tag-based automatic publishing to npm
+- **Preview Packages**: PRs automatically publish preview packages via `pkg-pr-new`
+
+### Release Process
+
+```bash
+# 1. Ensure all changes are committed and tests pass
+bun run ci
+
+# 2. Bump version interactively
+bun run release
+# Select version type:
+# - patch (1.0.0 → 1.0.1): Bug fixes
+# - minor (1.0.0 → 1.1.0): New features
+# - major (1.0.0 → 2.0.0): Breaking changes
+# - custom: Specify exact version
+
+# 3. Push changes and tags to trigger automatic npm publish
+git push --follow-tags
+```
+
+### Version Guidelines
+
+Follow [Semantic Versioning](https://semver.org/):
+
+- **PATCH**: Backwards-compatible bug fixes, documentation updates
+- **MINOR**: New features, new file type support, backwards-compatible additions
+- **MAJOR**: Breaking changes, removed features, Node.js requirement changes
+
+### Required Setup
+
+Before first release:
+
+1. Add `NPM_TOKEN` to GitHub repository secrets
+2. Verify package name availability: `npm view claude-explorer`
+3. Ensure npm account has publishing permissions
+
+See `VERSIONING.md` for detailed versioning strategy and commit message conventions.

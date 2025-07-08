@@ -1,0 +1,11 @@
+{
+  "commit": "chore: release v%s",
+  "tag": "%s",
+  "push": false,
+  "files": [
+    "package.json"
+  ],
+  "verify": [
+    "bun run ci"
+  ]
+}
