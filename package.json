@@ -1,5 +1,5 @@
 {
-  "name": "claude-explorer",
+  "name": "claude-code-explorer",
   "type": "module",
   "version": "1.0.0",
   "description": "CLI tool for exploring and managing Claude Code settings and slash commands",

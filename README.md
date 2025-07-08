@@ -43,17 +43,17 @@ Claude Explorer automatically discovers these configuration files:
 
 ```bash
 # Run without installing
-bunx claude-explorer
+bunx claude-code-explorer
 # or
-npx claude-explorer
+npx claude-code-explorer
 ```
 
 ### Optional: Global installation
 
 ```bash
-npm install -g claude-explorer
+npm install -g claude-code-explorer
 # Then run anywhere
-claude-explorer
+claude-code-explorer
 ```
 
 ## Usage
@@ -61,32 +61,32 @@ claude-explorer
 ### Interactive Mode (Default)
 
 ```bash
-claude-explorer                    # Launch interactive TUI
-claude-explorer --path ~/projects # Scan specific directory
+claude-code-explorer                    # Launch interactive TUI
+claude-code-explorer --path ~/projects # Scan specific directory
 ```
 
 ### Command Line Options
 
 ```bash
-claude-explorer --help             # Show help information
-claude-explorer --version          # Show version number
-claude-explorer --path <path>      # Specify directory to scan
+claude-code-explorer --help             # Show help information
+claude-code-explorer --version          # Show version number
+claude-code-explorer --path <path>      # Specify directory to scan
 ```
 
 ### Examples
 
 ```bash
 # Interactive exploration of current directory
-claude-explorer
+claude-code-explorer
 
 # Scan specific project directory
-claude-explorer --path /path/to/project
+claude-code-explorer --path /path/to/project
 
 # Show help
-claude-explorer --help
+claude-code-explorer --help
 
 # Show version
-claude-explorer --version
+claude-code-explorer --version
 ```
 
 ### Development Mode
@@ -127,11 +127,11 @@ bun run build      # Build for production
 
 ### CLI Reference
 
-| Option             | Short | Description                              | Default           |
-| ------------------ | ----- | ---------------------------------------- | ----------------- |
-| `--help`           | `-h`  | Show help information                    | -                 |
-| `--version`        | `-V`  | Show version number                      | -                 |
-| `--path`           | `-p`  | Directory to scan                        | Current directory |
+| Option      | Short | Description           | Default           |
+| ----------- | ----- | --------------------- | ----------------- |
+| `--help`    | `-h`  | Show help information | -                 |
+| `--version` | `-V`  | Show version number   | -                 |
+| `--path`    | `-p`  | Directory to scan     | Current directory |
 
 ### Development Commands
 
