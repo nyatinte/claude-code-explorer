@@ -252,43 +252,10 @@ if (import.meta.vitest) {
       unmount();
     });
 
-    test.skip('flow: open file in external editor', async () => {
-      // Skipped due to focus issues preventing menu from opening in test environment
-      const { stdin, lastFrame, unmount } = render(<App cliOptions={{}} />);
-      const interaction = createTestInteraction(stdin, lastFrame);
-
-      await waitForEffects();
-
-      // Navigate to a file
-      await interaction.navigateDown(); // Move to PROJECT group
-
-      // Expand if collapsed
-      const output = interaction.assertOutput();
-      if (output.includes('▶')) {
-        await interaction.selectItem();
-        await waitForEffects();
-      }
-
-      await interaction.navigateDown(); // Move to CLAUDE.md
-
-      // Open menu
-      await interaction.selectItem();
-
-      // Select open action
-      await interaction.executeShortcut('o');
-
-      // Wait for async import
-      await waitForEffects();
-
-      // Verify open was called
-      const openModule = await import('open');
-      expect(openModule.default).toHaveBeenCalledWith('/project/CLAUDE.md');
-
-      unmount();
-    });
-
     test.skip('flow: copy different path formats', async () => {
-      // Skipped due to focus issues preventing menu from opening in test environment
+      // Skipped: ink-testing-library doesn't support useFocus hook properly
+      // See: https://github.com/vadimdemedes/ink/issues/515
+      // Menu mode requires focus management which doesn't work in test environment
       const { stdin, lastFrame, unmount } = render(<App cliOptions={{}} />);
       const interaction = createTestInteraction(stdin, lastFrame);
 
@@ -338,7 +305,9 @@ if (import.meta.vitest) {
     });
 
     test.skip('flow: escape key behavior in different contexts', async () => {
-      // Skipped due to focus issues preventing menu from opening in test environment
+      // Skipped: ink-testing-library doesn't support useFocus hook properly
+      // See: https://github.com/vadimdemedes/ink/issues/515
+      // Menu mode requires focus management which doesn't work in test environment
       const { stdin, lastFrame, unmount } = render(<App cliOptions={{}} />);
       const interaction = createTestInteraction(stdin, lastFrame);
 
@@ -371,7 +340,9 @@ if (import.meta.vitest) {
     });
 
     test.skip('flow: error handling when clipboard fails', async () => {
-      // Skipped due to focus issues preventing menu from opening in test environment
+      // Skipped: ink-testing-library doesn't support useFocus hook properly
+      // See: https://github.com/vadimdemedes/ink/issues/515
+      // Menu mode requires focus management which doesn't work in test environment
       const { stdin, lastFrame, unmount } = render(<App cliOptions={{}} />);
       const interaction = createTestInteraction(stdin, lastFrame);
 
@@ -425,7 +396,9 @@ if (import.meta.vitest) {
     });
 
     test.skip('flow: search during menu display', async () => {
-      // Skipped due to focus issues preventing menu from opening in test environment
+      // Skipped: ink-testing-library doesn't support useFocus hook properly
+      // See: https://github.com/vadimdemedes/ink/issues/515
+      // Menu mode requires focus management which doesn't work in test environment
       const { stdin, lastFrame, unmount } = render(<App cliOptions={{}} />);
       const interaction = createTestInteraction(stdin, lastFrame);
 
@@ -454,7 +427,9 @@ if (import.meta.vitest) {
     });
 
     test.skip('flow: rapid navigation and selection', async () => {
-      // Skipped due to focus issues preventing menu from opening in test environment
+      // Skipped: ink-testing-library doesn't support useFocus hook properly
+      // See: https://github.com/vadimdemedes/ink/issues/515
+      // Menu mode requires focus management which doesn't work in test environment
       const { stdin, lastFrame, unmount } = render(<App cliOptions={{}} />);
       const interaction = createTestInteraction(stdin, lastFrame);
 

@@ -114,41 +114,6 @@ if (import.meta.vitest) {
       expect(output).toContain('tabbed.md');
     });
 
-    test.skip('handles empty search results gracefully', async () => {
-      // Skipped: Search display logic differs in current implementation
-      const files = [
-        createMockFile('file1.md', 'claude-md'),
-        createMockFile('file2.md', 'claude-md'),
-      ];
-
-      mockedScanClaudeFiles.mockResolvedValue(files);
-
-      const { stdin, lastFrame, unmount } = render(<App cliOptions={{}} />);
-      const interaction = createTestInteraction(stdin, lastFrame);
-
-      await waitForEffects();
-
-      // Search for something that doesn't exist
-      await interaction.search('zzzzzzzzzzz');
-      await waitForEffects();
-
-      // Should show no matching files
-      const output = lastFrame();
-      expect(output).toContain('Claude Files');
-      // During search, the header shows total count, but filtered files should not be visible
-      expect(output).toContain('Search: zzzzzzzzzzz');
-      // The file list should be empty or collapsed when no matches
-
-      // Clear search
-      await interaction.clearSearch();
-      await waitForEffects();
-
-      // Files should reappear
-      interaction.verifyContent('Claude Files (2)');
-
-      unmount();
-    });
-
     test('handles files with no extension', () => {
       const files = [
         createMockFile('README', 'claude-md'),
@@ -237,49 +202,6 @@ if (import.meta.vitest) {
       expect(output).toContain('CLAUDE.md');
       // Root files show with leading slash
       expect(output).toContain('/root.md');
-    });
-
-    test.skip('handles mixed file types in large quantities', async () => {
-      // Skipped: Loading screen appears with large file counts
-      const mixedFiles = [
-        ...Array.from({ length: 250 }, (_, i) =>
-          createMockFile(`project${i}.md`, 'claude-md'),
-        ),
-        ...Array.from({ length: 250 }, (_, i) =>
-          createMockFile(`local${i}.md`, 'claude-local-md'),
-        ),
-        ...Array.from({ length: 250 }, (_, i) =>
-          createMockFile(
-            `cmd${i}.md`,
-            'slash-command',
-            `/.claude/commands/cmd${i}.md`,
-          ),
-        ),
-        ...Array.from({ length: 250 }, (_, i) =>
-          createMockFile(
-            `global${i}.md`,
-            'global-md',
-            `/home/.claude/global${i}.md`,
-          ),
-        ),
-      ];
-
-      mockedScanClaudeFiles.mockResolvedValue(mixedFiles);
-
-      const { lastFrame, unmount } = render(<App cliOptions={{}} />);
-
-      await waitForEffects();
-
-      const output = lastFrame();
-      // Should show total count
-      expect(output).toContain('Claude Files (1000)');
-      // Should show all groups
-      expect(output).toContain('PROJECT (250)');
-      expect(output).toContain('LOCAL (250)');
-      expect(output).toContain('COMMAND (250)');
-      expect(output).toContain('GLOBAL (250)');
-
-      unmount();
     });
 
     test.skip('handles search with regex special characters', async () => {

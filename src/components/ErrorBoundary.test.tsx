@@ -161,43 +161,6 @@ if (import.meta.vitest) {
       expect(output).toContain('Test error message');
     });
 
-    test.skip('error boundary with async component error', async () => {
-      // Skipped: React error boundaries don't catch errors in async code
-      const AsyncError = () => {
-        const [shouldThrow, setShouldThrow] = React.useState(false);
-
-        React.useEffect(() => {
-          const timer = setTimeout(() => {
-            setShouldThrow(true);
-          }, 10);
-          return () => clearTimeout(timer);
-        }, []);
-
-        if (shouldThrow) {
-          throw new Error('Async error');
-        }
-
-        return <Text>Waiting...</Text>;
-      };
-
-      const { lastFrame } = render(
-        <ErrorBoundary>
-          <AsyncError />
-        </ErrorBoundary>,
-      );
-
-      // Initially no error
-      expect(lastFrame()).toContain('Waiting...');
-
-      // Wait for async error
-      await new Promise((resolve) => setTimeout(resolve, 20));
-
-      // Error should be displayed
-      const output = lastFrame();
-      expect(output).toContain('Something went wrong');
-      expect(output).toContain('Async error');
-    });
-
     test('error formatting handles various error types', () => {
       // Test with error that has stack trace
       const ErrorWithStack = () => {

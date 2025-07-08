@@ -16,7 +16,7 @@ const packageJson = JSON.parse(
 
 // CLI configuration
 program
-  .name('claude-explorer')
+  .name('claude-code-explorer')
   .description(
     'Interactive CLI tool for exploring Claude Code settings and slash commands',
   )

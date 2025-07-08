@@ -506,6 +506,8 @@ if (import.meta.vitest) {
     describe('Menu mode', () => {
       test.skip('toggle menu mode with Enter key', async () => {
         // Skipped: ink-testing-library doesn't support useFocus hook properly
+        // See: https://github.com/vadimdemedes/ink/issues/515
+        // Menu mode requires focus management which doesn't work in test environment
         const files = [createMockFile('file1.md', 'claude-md')];
         const fileGroups = createFileGroups(files);
 
