@@ -121,7 +121,7 @@ if (import.meta.vitest) {
       let attempts = 0;
       while (attempts < 10) {
         const output = interaction.getOutput();
-        if (output.includes('Claude Files') && !output.includes('Loading')) {
+        if (output?.includes('Claude Files') && !output.includes('Loading')) {
           break;
         }
         await delay(10);
@@ -193,12 +193,12 @@ if (import.meta.vitest) {
 
       // Wait for loading to complete
       await delay(50);
-      
+
       // Wait until content is loaded
       let attempts = 0;
       while (attempts < 10) {
         const output = interaction.getOutput();
-        if (output.includes('Claude Files') && !output.includes('Loading')) {
+        if (output?.includes('Claude Files') && !output.includes('Loading')) {
           break;
         }
         await delay(10);
