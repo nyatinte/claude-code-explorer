@@ -1,5 +1,8 @@
 import { dirname, resolve } from 'node:path';
+import clipboardy from 'clipboardy';
 import { useInput } from 'ink';
+import open from 'open';
+import openEditor from 'open-editor';
 import { useCallback, useMemo, useState } from 'react';
 import type { ClaudeFileInfo } from '../../../../_types.js';
 import type { MenuAction } from '../types.js';
@@ -16,7 +19,6 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
 
   const copyToClipboard = useCallback(async (text: string): Promise<void> => {
     try {
-      const { default: clipboardy } = await import('clipboardy');
       await clipboardy.write(text);
     } catch (error) {
       throw new Error(`Failed to copy to clipboard: ${error}`);
@@ -25,10 +27,40 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
 
   const openFile = useCallback(async (path: string): Promise<void> => {
     try {
-      const open = await import('open');
-      await open.default(path);
+      await open(path);
     } catch (error) {
       throw new Error(`Failed to open file: ${error}`);
+    }
+  }, []);
+
+  const editFile = useCallback(async (path: string): Promise<void> => {
+    try {
+      // Check if editor is configured
+      const editor = process.env.EDITOR || process.env.VISUAL;
+      if (!editor) {
+        throw new Error(
+          'No editor configured. Please set $EDITOR or $VISUAL environment variable.',
+        );
+      }
+
+      await openEditor([path]);
+    } catch (error) {
+      // Handle specific error cases
+      if (error instanceof Error) {
+        // Command not found error
+        if (error.message.includes('ENOENT')) {
+          const editor = process.env.EDITOR || process.env.VISUAL || 'not set';
+          throw new Error(
+            `Editor command "${editor}" not found in PATH. ` +
+              'Please ensure $EDITOR or $VISUAL is set to a valid command.',
+          );
+        }
+        // Already our custom error
+        if (error.message.includes('No editor configured')) {
+          throw error;
+        }
+      }
+      throw new Error(`Failed to edit file: ${error}`);
     }
   }, []);
 
@@ -75,6 +107,15 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
         },
       },
       {
+        key: 'e',
+        label: 'Edit File',
+        description: 'Edit file with $EDITOR',
+        action: async () => {
+          await editFile(file.path);
+          return '✅ File opened in editor';
+        },
+      },
+      {
         key: 'o',
         label: 'Open File',
         description: 'Open file with default application',
@@ -84,7 +125,7 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
         },
       },
     ],
-    [file.path, copyToClipboard, openFile],
+    [file.path, copyToClipboard, openFile, editFile],
   );
 
   const executeAction = useCallback(
