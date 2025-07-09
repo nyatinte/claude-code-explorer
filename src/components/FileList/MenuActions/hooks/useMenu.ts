@@ -3,7 +3,7 @@ import clipboardy from 'clipboardy';
 import { useInput } from 'ink';
 import open from 'open';
 import openEditor from 'open-editor';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ClaudeFileInfo } from '../../../../_types.js';
 import type { MenuAction } from '../types.js';
 
@@ -21,6 +21,7 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
   const [pendingAction, setPendingAction] = useState<
     (() => Promise<string>) | null
   >(null);
+  const messageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const copyToClipboard = useCallback(async (text: string): Promise<void> => {
     try {
@@ -71,24 +72,33 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
 
   const handleConfirm = useCallback(async () => {
     if (pendingAction) {
+      setIsExecuting(true);
       setIsConfirming(false);
       setConfirmMessage('');
       const action = pendingAction;
       setPendingAction(null);
 
+      if (messageTimeoutRef.current) {
+        clearTimeout(messageTimeoutRef.current);
+      }
+
       try {
         const successMessage = await action();
         setMessage(successMessage);
-        setTimeout(() => {
+        messageTimeoutRef.current = setTimeout(() => {
           setMessage('');
+          messageTimeoutRef.current = null;
         }, 2000);
       } catch (error) {
         setMessage(
           `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
-        setTimeout(() => {
+        messageTimeoutRef.current = setTimeout(() => {
           setMessage('');
+          messageTimeoutRef.current = null;
         }, 3000);
+      } finally {
+        setIsExecuting(false);
       }
     }
   }, [pendingAction]);
@@ -215,15 +225,29 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
       try {
         const successMessage = await action.action();
         setMessage(successMessage);
-        setTimeout(() => {
+
+        // Clear any existing message timeout
+        if (messageTimeoutRef.current) {
+          clearTimeout(messageTimeoutRef.current);
+        }
+
+        messageTimeoutRef.current = setTimeout(() => {
           setMessage('');
+          messageTimeoutRef.current = null;
         }, 2000);
       } catch (error) {
         setMessage(
           `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
-        setTimeout(() => {
+
+        // Clear any existing message timeout
+        if (messageTimeoutRef.current) {
+          clearTimeout(messageTimeoutRef.current);
+        }
+
+        messageTimeoutRef.current = setTimeout(() => {
           setMessage('');
+          messageTimeoutRef.current = null;
         }, 3000);
       } finally {
         setIsExecuting(false);
@@ -261,6 +285,15 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
     },
     { isActive: !isConfirming },
   );
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (messageTimeoutRef.current) {
+        clearTimeout(messageTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return {
     actions,
