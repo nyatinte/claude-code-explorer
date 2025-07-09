@@ -34,9 +34,32 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
 
   const editFile = useCallback(async (path: string): Promise<void> => {
     try {
+      // Check if editor is configured
+      const editor = process.env.EDITOR || process.env.VISUAL;
+      if (!editor) {
+        throw new Error(
+          'No editor configured. Please set $EDITOR or $VISUAL environment variable.',
+        );
+      }
+
       const openEditor = await import('open-editor');
       await openEditor.default([path]);
     } catch (error) {
+      // Handle specific error cases
+      if (error instanceof Error) {
+        // Command not found error
+        if (error.message.includes('ENOENT')) {
+          const editor = process.env.EDITOR || process.env.VISUAL || 'not set';
+          throw new Error(
+            `Editor command "${editor}" not found in PATH. ` +
+              'Please ensure $EDITOR or $VISUAL is set to a valid command.',
+          );
+        }
+        // Already our custom error
+        if (error.message.includes('No editor configured')) {
+          throw error;
+        }
+      }
       throw new Error(`Failed to edit file: ${error}`);
     }
   }, []);
