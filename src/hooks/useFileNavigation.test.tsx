@@ -1,17 +1,35 @@
 import { Text } from 'ink';
 import { render } from 'ink-testing-library';
-import type { FileScanner } from '../_types.js';
+import React from 'react';
+import type { ClaudeFileInfo, FileScanner } from '../_types.js';
 import { scanClaudeFiles } from '../claude-md-scanner.js';
 import { scanSlashCommands } from '../slash-command-scanner.js';
 import { delay } from '../test-utils.js';
 import { useFileNavigation } from './useFileNavigation.js';
 
 // Test component (for testing useFileNavigation)
-function TestComponent({ scanner }: { scanner?: FileScanner }) {
+function TestComponent({
+  scanner,
+  onError,
+  onFilesLoaded,
+}: {
+  scanner?: FileScanner;
+  onError?: (error: string | undefined) => void;
+  onFilesLoaded?: (files: ClaudeFileInfo[]) => void;
+}) {
   const { files, selectedFile, isLoading, error } = useFileNavigation(
     { recursive: false },
     scanner,
   );
+
+  // Call callbacks for testing
+  React.useEffect(() => {
+    if (onError) onError(error);
+  }, [error, onError]);
+
+  React.useEffect(() => {
+    if (onFilesLoaded && !isLoading) onFilesLoaded(files);
+  }, [files, isLoading, onFilesLoaded]);
 
   if (isLoading) {
     return <Text>Loading...</Text>;
@@ -37,6 +55,7 @@ if (import.meta.vitest) {
     createComplexProjectFixture,
     withTempFixture,
   } = await import('../test-fixture-helpers.js');
+  const { createFixture } = await import('fs-fixture');
 
   describe('useFileNavigation', () => {
     test('files are loaded and sorted correctly', async () => {
@@ -78,57 +97,106 @@ if (import.meta.vitest) {
       expect(frame).not.toContain('Error:'); // No errors
     });
 
-    test.skip('error state is set when Claude file loading fails', async () => {
-      // Create a directory with permission issues
-      await using _fixture = await withTempFixture(
-        {
+    // Skip on Windows where chmod behavior is different
+    test.skipIf(process.platform === 'win32')(
+      'error state is set when Claude file loading fails due to permissions',
+      async () => {
+        await using fixture = await createFixture({
           restricted: {
             'CLAUDE.md': 'Test content',
           },
-        },
-        async (f) => {
-          const { chmod } = await import('node:fs/promises');
+          accessible: {
+            'CLAUDE.md': 'Accessible content',
+          },
+        });
 
-          // Make directory unreadable
-          await chmod(f.getPath('restricted'), 0o000);
+        const { chmod, readdir } = await import('node:fs/promises');
+        const restrictedPath = fixture.getPath('restricted');
 
+        // Remove read permissions
+        await chmod(restrictedPath, 0o000);
+
+        try {
           // Create test scanner that tries to scan the restricted directory
           const testScanner: FileScanner = {
+            scanClaudeFiles: async (options) => {
+              // This will throw EACCES error
+              try {
+                await readdir(restrictedPath);
+                return []; // Should not reach here
+              } catch (error) {
+                // Propagate the error to test error handling
+                throw error;
+              }
+            },
+            scanSlashCommands: async () => [],
+          };
+
+          let capturedError: string | undefined;
+          let loadedFiles: ClaudeFileInfo[] = [];
+
+          const { lastFrame } = render(
+            <TestComponent
+              scanner={testScanner}
+              onError={(error) => {
+                capturedError = error;
+              }}
+              onFilesLoaded={(files) => {
+                loadedFiles = files;
+              }}
+            />,
+          );
+
+          // Initial state is loading
+          expect(lastFrame()).toContain('Loading...');
+
+          // Wait for the error to be caught and state to update
+          await delay(500);
+
+          // Verify error handling
+          expect(capturedError).toBeDefined();
+          expect(capturedError).toMatch(/EACCES|permission denied/i);
+          expect(loadedFiles).toEqual([]);
+
+          const frame = lastFrame();
+          expect(frame).toContain('Error:');
+          expect(frame).toMatch(/EACCES|permission denied/i);
+          expect(frame).not.toContain('Loading...');
+
+          // Test recovery: Create a new scanner for accessible directory
+          const accessibleScanner: FileScanner = {
             scanClaudeFiles: (options) =>
               scanClaudeFiles({
                 ...options,
-                path: f.getPath('restricted'),
+                path: fixture.getPath('accessible'),
                 recursive: false,
               }),
             scanSlashCommands: (options) =>
               scanSlashCommands({
                 ...options,
-                path: f.getPath('restricted'),
+                path: fixture.getPath('accessible'),
                 recursive: false,
               }),
           };
 
-          const { lastFrame } = render(<TestComponent scanner={testScanner} />);
+          // Re-render with working scanner to test recovery
+          const { lastFrame: lastFrame2 } = render(
+            <TestComponent scanner={accessibleScanner} />,
+          );
 
-          // Initial state is loading
-          expect(lastFrame()).toContain('Loading...');
+          await delay(300);
 
-          // Wait for async processing to complete
-          await delay(300); // Reduced delay for error handling
-
-          // Should show error state or have files from global directory
-          const frame = lastFrame();
-          console.log('Error test frame:', frame);
-          // The error might be caught and only global files shown
-          expect(frame).not.toContain('Loading...');
-
-          // Restore permissions
-          await chmod(f.getPath('restricted'), 0o755);
-
-          return f;
-        },
-      );
-    });
+          // Verify the app recovers and works with accessible directory
+          const recoveredFrame = lastFrame2();
+          expect(recoveredFrame).not.toContain('Error:');
+          expect(recoveredFrame).toContain('Files:');
+          expect(recoveredFrame).not.toContain('Files: 0');
+        } finally {
+          // CRITICAL: Restore permissions for cleanup
+          await chmod(restrictedPath, 0o755);
+        }
+      },
+    );
 
     test('handles empty project directory', async () => {
       // Create empty directory
