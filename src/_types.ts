@@ -15,6 +15,8 @@ export type ClaudeFileType =
   | 'claude-local-md'
   | 'global-md'
   | 'slash-command'
+  | 'settings-json'
+  | 'settings-local-json'
   | 'unknown';
 
 export type ProjectInfo = {

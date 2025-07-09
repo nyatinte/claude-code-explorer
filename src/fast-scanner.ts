@@ -113,6 +113,58 @@ const isAvailable = async (): Promise<boolean> => {
 };
 
 /**
+ * Find settings.json files using fdir
+ */
+export const findSettingsJson = async (
+  options: ScanOptions = {},
+): Promise<string[]> => {
+  const {
+    path = process.cwd(),
+    recursive = true,
+    includeHidden = false,
+  } = options;
+
+  let crawler = new fdir()
+    .withFullPaths()
+    .exclude((dirName) => {
+      // Use comprehensive exclusion patterns for security and performance
+      if ((DEFAULT_EXCLUSIONS as readonly string[]).includes(dirName)) {
+        return true;
+      }
+
+      // Handle hidden files
+      if (!includeHidden && dirName.startsWith('.') && dirName !== '.claude') {
+        return true;
+      }
+
+      return false;
+    })
+    .filter((filePath) => {
+      // Look for settings.json or settings.local.json in .claude directories
+      const fileName = filePath.split('/').pop() || '';
+      return (
+        filePath.includes('/.claude/') &&
+        (fileName === 'settings.json' || fileName === 'settings.local.json')
+      );
+    });
+
+  // Limit depth for performance
+  if (!recursive) {
+    crawler = crawler.withMaxDepth(4); // Settings are usually at specific depth
+  } else {
+    crawler = crawler.withMaxDepth(20);
+  }
+
+  try {
+    const files = await crawler.crawl(path).withPromise();
+    return files;
+  } catch (error) {
+    console.warn(`Failed to scan settings.json files in ${path}:`, error);
+    return [];
+  }
+};
+
+/**
  * Get fdir version information
  * Internal function for testing only
  */
@@ -188,6 +240,17 @@ if (import.meta.vitest != null) {
 
       expect(Array.isArray(files)).toBe(true);
       expect(files.length).toBe(0);
+    });
+
+    test('should find settings.json files', async () => {
+      // Test finding settings.json files
+      const settings = await findSettingsJson({
+        path: process.cwd(),
+        recursive: true,
+      });
+
+      expect(Array.isArray(settings)).toBe(true);
+      // Settings array might be empty if no .claude/project/settings.json exist
     });
   });
 }

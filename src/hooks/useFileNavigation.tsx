@@ -7,6 +7,7 @@ import type {
   SlashCommandInfo,
 } from '../_types.js';
 import { scanClaudeFiles } from '../claude-md-scanner.js';
+import { scanSettingsJson } from '../settings-json-scanner.js';
 import { scanSlashCommands } from '../slash-command-scanner.js';
 
 // Union type to unify ClaudeFileInfo and SlashCommandInfo
@@ -58,15 +59,23 @@ export function useFileNavigation(
   useEffect(() => {
     // Execute file scan
     const scanOptions = { recursive, path };
-    Promise.all([scanClaudeFiles(scanOptions), scanSlashCommands(scanOptions)])
-      .then(([claudeFiles, slashCommands]) => {
+    Promise.all([
+      scanClaudeFiles(scanOptions),
+      scanSlashCommands(scanOptions),
+      scanSettingsJson(scanOptions),
+    ])
+      .then(([claudeFiles, slashCommands, settingsFiles]) => {
         // Convert slash commands to ClaudeFileInfo format
         const convertedCommands = slashCommands.map(
           convertSlashCommandToFileInfo,
         );
 
-        // Combine both results
-        const allFiles = [...claudeFiles, ...convertedCommands];
+        // Combine all results
+        const allFiles = [
+          ...claudeFiles,
+          ...convertedCommands,
+          ...settingsFiles,
+        ];
 
         // Group files by type
         const groupedFiles = allFiles.reduce<
@@ -95,6 +104,8 @@ export function useFileNavigation(
         const orderedTypes: ClaudeFileType[] = [
           'claude-md',
           'claude-local-md',
+          'settings-json',
+          'settings-local-json',
           'slash-command',
           'global-md',
           'unknown',

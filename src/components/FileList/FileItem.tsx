@@ -29,6 +29,14 @@ export const FileItem = React.memo(function FileItem({
         label: 'COMMAND',
       }))
       .with('global-md', () => ({ color: 'magenta' as const, label: 'GLOBAL' }))
+      .with('settings-json', () => ({
+        color: 'cyan' as const,
+        label: 'SETTINGS',
+      }))
+      .with('settings-local-json', () => ({
+        color: 'yellowBright' as const,
+        label: 'LOCAL SETTINGS',
+      }))
       .with('unknown', () => ({ color: 'gray' as const, label: 'FILE' }))
       .exhaustive();
   };
@@ -40,6 +48,8 @@ export const FileItem = React.memo(function FileItem({
       .with('claude-local-md', () => '🔒')
       .with('slash-command', () => '⚡')
       .with('global-md', () => '🌐')
+      .with('settings-json', () => '⚙️')
+      .with('settings-local-json', () => '🔧')
       .with('unknown', () => '📄')
       .exhaustive();
   };
@@ -50,13 +60,28 @@ export const FileItem = React.memo(function FileItem({
   const parentDir = basename(dirPath);
 
   // Display name (including parent directory)
-  // Special handling for home directory
-  const displayName =
-    file.type === 'global-md'
-      ? `~/.claude/${fileName}`
-      : file.type === 'slash-command'
-        ? fileName.replace('.md', '') // Remove .md for commands
-        : `${parentDir}/${fileName}`;
+  // Special handling for home directory and settings files
+  const getDisplayName = (): string => {
+    if (file.type === 'global-md') {
+      return `~/.claude/${fileName}`;
+    }
+    if (file.type === 'slash-command') {
+      return fileName.replace('.md', ''); // Remove .md for commands
+    }
+    if (file.type === 'settings-json' || file.type === 'settings-local-json') {
+      // For settings files, show 3 levels: grandparent/parent/filename
+      const parts = file.path.split('/');
+      const claudeIndex = parts.lastIndexOf('.claude');
+      if (claudeIndex > 0 && parts[claudeIndex - 1]) {
+        // Show: project-name/.claude/settings.json
+        return `${parts[claudeIndex - 1]}/.claude/${fileName}`;
+      }
+      return `${parentDir}/${fileName}`;
+    }
+    return `${parentDir}/${fileName}`;
+  };
+
+  const displayName = getDisplayName();
 
   const prefix = isFocused ? '► ' : '  ';
 
