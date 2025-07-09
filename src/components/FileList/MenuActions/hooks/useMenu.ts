@@ -32,6 +32,15 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
     }
   }, []);
 
+  const editFile = useCallback(async (path: string): Promise<void> => {
+    try {
+      const openEditor = await import('open-editor');
+      await openEditor.default([path]);
+    } catch (error) {
+      throw new Error(`Failed to edit file: ${error}`);
+    }
+  }, []);
+
   const actions: MenuAction[] = useMemo(
     () => [
       {
@@ -75,6 +84,15 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
         },
       },
       {
+        key: 'e',
+        label: 'Edit File',
+        description: 'Edit file with $EDITOR',
+        action: async () => {
+          await editFile(file.path);
+          return '✅ File opened in editor';
+        },
+      },
+      {
         key: 'o',
         label: 'Open File',
         description: 'Open file with default application',
@@ -84,7 +102,7 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
         },
       },
     ],
-    [file.path, copyToClipboard, openFile],
+    [file.path, copyToClipboard, openFile, editFile],
   );
 
   const executeAction = useCallback(
