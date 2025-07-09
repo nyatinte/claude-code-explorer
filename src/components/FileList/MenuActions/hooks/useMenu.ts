@@ -1,4 +1,4 @@
-import { dirname, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import clipboardy from 'clipboardy';
 import { useInput } from 'ink';
 import open from 'open';
@@ -16,6 +16,11 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isExecuting, setIsExecuting] = useState(false);
   const [message, setMessage] = useState('');
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [pendingAction, setPendingAction] = useState<
+    (() => Promise<string>) | null
+  >(null);
 
   const copyToClipboard = useCallback(async (text: string): Promise<void> => {
     try {
@@ -64,6 +69,36 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
     }
   }, []);
 
+  const handleConfirm = useCallback(async () => {
+    if (pendingAction) {
+      setIsConfirming(false);
+      setConfirmMessage('');
+      const action = pendingAction;
+      setPendingAction(null);
+
+      try {
+        const successMessage = await action();
+        setMessage(successMessage);
+        setTimeout(() => {
+          setMessage('');
+        }, 2000);
+      } catch (error) {
+        setMessage(
+          `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+        setTimeout(() => {
+          setMessage('');
+        }, 3000);
+      }
+    }
+  }, [pendingAction]);
+
+  const handleCancel = useCallback(() => {
+    setIsConfirming(false);
+    setConfirmMessage('');
+    setPendingAction(null);
+  }, []);
+
   const actions: MenuAction[] = useMemo(
     () => [
       {
@@ -98,12 +133,57 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
       },
       {
         key: 'd',
-        label: 'Copy Current Directory',
-        description: 'Copy directory path to clipboard',
+        label: 'Copy to Current Directory',
+        description: 'Copy file to current working directory',
         action: async () => {
-          const dirPath = dirname(file.path);
-          await copyToClipboard(dirPath);
-          return '✅ Directory path copied to clipboard';
+          const fs = await import('node:fs/promises');
+          const cwd = process.cwd();
+
+          // Determine destination path based on file type
+          let destPath: string;
+          if (file.type === 'slash-command') {
+            // For slash commands, preserve the directory structure under .claude/commands/
+            const commandsIndex = file.path.indexOf('.claude/commands/');
+            if (commandsIndex !== -1) {
+              const relativePath = file.path.slice(commandsIndex);
+              destPath = join(cwd, relativePath);
+            } else {
+              // Fallback for slash commands not in expected location
+              destPath = join(cwd, '.claude', 'commands', basename(file.path));
+            }
+          } else {
+            // For CLAUDE.md and CLAUDE.local.md, copy to current directory
+            destPath = join(cwd, basename(file.path));
+          }
+
+          // Check if file already exists
+          try {
+            await fs.access(destPath);
+            // File exists, need confirmation
+            setConfirmMessage(
+              `File "${basename(destPath)}" already exists. Overwrite?`,
+            );
+            setIsConfirming(true);
+            setPendingAction(() => async () => {
+              // Create directory if needed
+              const destDir = dirname(destPath);
+              await fs.mkdir(destDir, { recursive: true });
+
+              // Copy file
+              await fs.copyFile(file.path, destPath);
+              return `✅ Copied to ${destPath}`;
+            });
+
+            // Return early, action will be executed after confirmation
+            return '';
+          } catch {
+            // File doesn't exist, proceed with copy
+            const destDir = dirname(destPath);
+            await fs.mkdir(destDir, { recursive: true });
+
+            await fs.copyFile(file.path, destPath);
+            return `✅ Copied to ${destPath}`;
+          }
         },
       },
       {
@@ -125,7 +205,7 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
         },
       },
     ],
-    [file.path, copyToClipboard, openFile, editFile],
+    [file.path, file.type, copyToClipboard, openFile, editFile],
   );
 
   const executeAction = useCallback(
@@ -154,7 +234,7 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
 
   useInput(
     async (input, key) => {
-      if (isExecuting) return;
+      if (isExecuting || isConfirming) return;
 
       if (key.escape) {
         onClose();
@@ -179,7 +259,7 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
         }
       }
     },
-    { isActive: true },
+    { isActive: !isConfirming },
   );
 
   return {
@@ -187,5 +267,9 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
     selectedIndex,
     isExecuting,
     message,
+    isConfirming,
+    confirmMessage,
+    handleConfirm,
+    handleCancel,
   };
 };

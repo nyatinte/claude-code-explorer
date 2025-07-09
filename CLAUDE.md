@@ -170,6 +170,7 @@ The tool automatically discovers these file types:
 - **CLAUDE.local.md** → Local overrides (gitignored)  
 - **~/.claude/CLAUDE.md** → Global user configuration
 - **.claude/commands/**/*.md** → Slash command definitions
+- **.claude/project/settings.json** → Project settings configuration
 
 ### TypeScript Configuration
 
