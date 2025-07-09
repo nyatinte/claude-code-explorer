@@ -58,13 +58,41 @@ No installation required! Run directly with:
 
 ```bash
 # Using Bun (fastest)
-bunx claude-code-explorer
+bunx claude-code-explorer@latest
 
 # Using npm
-npx claude-code-explorer
+npx claude-code-explorer@latest
 
 # Using pnpm
-pnpm dlx claude-code-explorer
+pnpm dlx claude-code-explorer@latest
+```
+
+### Shell Alias (Recommended for Frequent Use)
+
+The command `npx claude-code-explorer` can be lengthy to type. We recommend setting up a shell alias:
+
+```bash
+# Add to ~/.bashrc, ~/.zshrc, or your shell's config file
+alias ccexp="npx claude-code-explorer@latest"
+
+# For Bun users
+alias ccexp="bunx claude-code-explorer@latest"
+
+# For pnpm users
+alias ccexp="pnpm dlx claude-code-explorer@latest"
+```
+
+After adding the alias, reload your shell configuration:
+
+```bash
+source ~/.bashrc    # or ~/.zshrc
+```
+
+Now you can simply run:
+
+```bash
+ccexp               # Launch in current directory
+ccexp --path ~/projects  # Scan specific directory
 ```
 
 ### Global Installation
@@ -110,19 +138,19 @@ claude-code-explorer --path <path>      # Specify directory to scan
 
 ```bash
 # Launch in current directory
-bunx claude-code-explorer
+bunx claude-code-explorer@latest
 
 # Scan specific project
-bunx claude-code-explorer --path ~/my-project
+bunx claude-code-explorer@latest --path ~/my-project
 
 # Quick exploration without installation
-npx claude-code-explorer
+npx claude-code-explorer@latest
 
 # Show help
-bunx claude-code-explorer --help
+bunx claude-code-explorer@latest --help
 
 # Show version
-bunx claude-code-explorer --version
+bunx claude-code-explorer@latest --version
 ```
 
 ### Common Use Cases
@@ -130,13 +158,17 @@ bunx claude-code-explorer --version
 ```bash
 # Find all Claude configuration in your workspace
 cd ~/workspace
-bunx claude-code-explorer
+bunx claude-code-explorer@latest
 
 # Check Claude settings in a specific project
-bunx claude-code-explorer --path ./my-project
+bunx claude-code-explorer@latest --path ./my-project
 
 # Explore global Claude configuration
-bunx claude-code-explorer --path ~/.claude
+bunx claude-code-explorer@latest --path ~/.claude
+
+# Using alias (after setup)
+ccexp                      # Current directory
+ccexp --path ~/workspace   # Specific directory
 ```
 
 ### Development Mode
