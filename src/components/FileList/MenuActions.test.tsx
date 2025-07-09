@@ -22,6 +22,7 @@ if (import.meta.vitest) {
       expect(lastFrame()).toContain('[P] Copy Path (Absolute)');
       expect(lastFrame()).toContain('[R] Copy Path (Relative)');
       expect(lastFrame()).toContain('[D] Copy Current Directory');
+      expect(lastFrame()).toContain('[E] Edit File');
       expect(lastFrame()).toContain('[O] Open File');
     });
 
@@ -76,11 +77,12 @@ if (import.meta.vitest) {
         <MenuActions file={file} onClose={onClose} />,
       );
 
-      // Verify 5 actions are present
+      // Verify 6 actions are present
       expect(lastFrame()).toContain('[C] Copy Content');
       expect(lastFrame()).toContain('[P] Copy Path (Absolute)');
       expect(lastFrame()).toContain('[R] Copy Path (Relative)');
       expect(lastFrame()).toContain('[D] Copy Current Directory');
+      expect(lastFrame()).toContain('[E] Edit File');
       expect(lastFrame()).toContain('[O] Open File');
     });
 
@@ -114,13 +116,15 @@ if (import.meta.vitest) {
       const copyRelativeIndex =
         output?.indexOf('[R] Copy Path (Relative)') ?? -1;
       const copyDirIndex = output?.indexOf('[D] Copy Current Directory') ?? -1;
+      const editFileIndex = output?.indexOf('[E] Edit File') ?? -1;
       const openFileIndex = output?.indexOf('[O] Open File') ?? -1;
 
       expect(copyContentIndex).toBeGreaterThan(-1);
       expect(copyAbsoluteIndex).toBeGreaterThan(copyContentIndex);
       expect(copyRelativeIndex).toBeGreaterThan(copyAbsoluteIndex);
       expect(copyDirIndex).toBeGreaterThan(copyRelativeIndex);
-      expect(openFileIndex).toBeGreaterThan(copyDirIndex);
+      expect(editFileIndex).toBeGreaterThan(copyDirIndex);
+      expect(openFileIndex).toBeGreaterThan(editFileIndex);
     });
 
     test('long file path display', () => {
@@ -204,6 +208,7 @@ if (import.meta.vitest) {
       expect(output).toContain('Copy Path (Absolute)');
       expect(output).toContain('Copy Path (Relative)');
       expect(output).toContain('Copy Current Directory');
+      expect(output).toContain('Edit File');
       expect(output).toContain('Open File');
     });
 
@@ -222,6 +227,7 @@ if (import.meta.vitest) {
       expect(output).toContain('[P]');
       expect(output).toContain('[R]');
       expect(output).toContain('[D]');
+      expect(output).toContain('[E]');
       expect(output).toContain('[O]');
     });
 
