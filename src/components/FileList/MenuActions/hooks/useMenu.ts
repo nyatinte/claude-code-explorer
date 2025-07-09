@@ -1,5 +1,8 @@
 import { dirname, resolve } from 'node:path';
+import clipboardy from 'clipboardy';
 import { useInput } from 'ink';
+import open from 'open';
+import openEditor from 'open-editor';
 import { useCallback, useMemo, useState } from 'react';
 import type { ClaudeFileInfo } from '../../../../_types.js';
 import type { MenuAction } from '../types.js';
@@ -16,7 +19,6 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
 
   const copyToClipboard = useCallback(async (text: string): Promise<void> => {
     try {
-      const { default: clipboardy } = await import('clipboardy');
       await clipboardy.write(text);
     } catch (error) {
       throw new Error(`Failed to copy to clipboard: ${error}`);
@@ -25,8 +27,7 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
 
   const openFile = useCallback(async (path: string): Promise<void> => {
     try {
-      const open = await import('open');
-      await open.default(path);
+      await open(path);
     } catch (error) {
       throw new Error(`Failed to open file: ${error}`);
     }
@@ -42,8 +43,7 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
         );
       }
 
-      const openEditor = await import('open-editor');
-      await openEditor.default([path]);
+      await openEditor([path]);
     } catch (error) {
       // Handle specific error cases
       if (error instanceof Error) {
