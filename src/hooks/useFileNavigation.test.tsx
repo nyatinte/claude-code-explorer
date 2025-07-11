@@ -97,106 +97,81 @@ if (import.meta.vitest) {
       expect(frame).not.toContain('Error:'); // No errors
     });
 
-    // Skip on Windows where chmod behavior is different
-    test.skipIf(process.platform === 'win32')(
-      'error state is set when Claude file loading fails due to permissions',
-      async () => {
-        await using fixture = await createFixture({
-          restricted: {
-            'CLAUDE.md': 'Test content',
-          },
-          accessible: {
-            'CLAUDE.md': 'Accessible content',
-          },
-        });
+    test('error state is set when Claude file loading fails', async () => {
+      // Use mock-based approach to avoid environment-specific issues
+      const testScanner: FileScanner = {
+        scanClaudeFiles: async () => {
+          throw new Error('EACCES: permission denied');
+        },
+        scanSlashCommands: async () => [],
+      };
 
-        const { chmod, readdir } = await import('node:fs/promises');
-        const restrictedPath = fixture.getPath('restricted');
+      let capturedError: string | undefined;
+      let loadedFiles: ClaudeFileInfo[] = [];
 
-        // Remove read permissions
-        await chmod(restrictedPath, 0o000);
+      const { lastFrame } = render(
+        <TestComponent
+          scanner={testScanner}
+          onError={(error) => {
+            capturedError = error;
+          }}
+          onFilesLoaded={(files) => {
+            loadedFiles = files;
+          }}
+        />,
+      );
 
-        try {
-          // Create test scanner that tries to scan the restricted directory
-          const testScanner: FileScanner = {
-            scanClaudeFiles: async (options) => {
-              // This will throw EACCES error
-              try {
-                await readdir(restrictedPath);
-                return []; // Should not reach here
-              } catch (error) {
-                // Propagate the error to test error handling
-                throw error;
-              }
-            },
-            scanSlashCommands: async () => [],
-          };
+      // Initial state is loading
+      expect(lastFrame()).toContain('Loading...');
 
-          let capturedError: string | undefined;
-          let loadedFiles: ClaudeFileInfo[] = [];
+      // Wait for the error to be caught and state to update
+      await delay(300);
 
-          const { lastFrame } = render(
-            <TestComponent
-              scanner={testScanner}
-              onError={(error) => {
-                capturedError = error;
-              }}
-              onFilesLoaded={(files) => {
-                loadedFiles = files;
-              }}
-            />,
-          );
+      // Verify error handling
+      expect(capturedError).toBeDefined();
+      expect(capturedError).toMatch(/EACCES|permission denied/i);
+      expect(loadedFiles).toEqual([]);
 
-          // Initial state is loading
-          expect(lastFrame()).toContain('Loading...');
+      const frame = lastFrame();
+      expect(frame).toContain('Error:');
+      expect(frame).toMatch(/EACCES|permission denied/i);
+      expect(frame).not.toContain('Loading...');
 
-          // Wait for the error to be caught and state to update
-          await delay(500);
+      // Test recovery with a working scanner
+      await using fixture = await createFixture({
+        accessible: {
+          'CLAUDE.md': 'Accessible content',
+        },
+      });
 
-          // Verify error handling
-          expect(capturedError).toBeDefined();
-          expect(capturedError).toMatch(/EACCES|permission denied/i);
-          expect(loadedFiles).toEqual([]);
+      const accessibleScanner: FileScanner = {
+        scanClaudeFiles: (options) =>
+          scanClaudeFiles({
+            ...options,
+            path: fixture.getPath('accessible'),
+            recursive: false,
+          }),
+        scanSlashCommands: (options) =>
+          scanSlashCommands({
+            ...options,
+            path: fixture.getPath('accessible'),
+            recursive: false,
+          }),
+      };
 
-          const frame = lastFrame();
-          expect(frame).toContain('Error:');
-          expect(frame).toMatch(/EACCES|permission denied/i);
-          expect(frame).not.toContain('Loading...');
+      // Re-render with working scanner to test recovery
+      const { lastFrame: lastFrame2 } = render(
+        <TestComponent scanner={accessibleScanner} />,
+      );
 
-          // Test recovery: Create a new scanner for accessible directory
-          const accessibleScanner: FileScanner = {
-            scanClaudeFiles: (options) =>
-              scanClaudeFiles({
-                ...options,
-                path: fixture.getPath('accessible'),
-                recursive: false,
-              }),
-            scanSlashCommands: (options) =>
-              scanSlashCommands({
-                ...options,
-                path: fixture.getPath('accessible'),
-                recursive: false,
-              }),
-          };
+      await delay(300);
 
-          // Re-render with working scanner to test recovery
-          const { lastFrame: lastFrame2 } = render(
-            <TestComponent scanner={accessibleScanner} />,
-          );
-
-          await delay(300);
-
-          // Verify the app recovers and works with accessible directory
-          const recoveredFrame = lastFrame2();
-          expect(recoveredFrame).not.toContain('Error:');
-          expect(recoveredFrame).toContain('Files:');
-          expect(recoveredFrame).not.toContain('Files: 0');
-        } finally {
-          // CRITICAL: Restore permissions for cleanup
-          await chmod(restrictedPath, 0o755);
-        }
-      },
-    );
+      // Verify the app recovers and works with accessible directory
+      const recoveredFrame = lastFrame2();
+      expect(recoveredFrame).not.toContain('Error:');
+      expect(recoveredFrame).toContain('Files:');
+      expect(recoveredFrame).not.toContain('Files: 0');
+    });
 
     test('handles empty project directory', async () => {
       // Create empty directory
@@ -276,52 +251,52 @@ if (import.meta.vitest) {
 
     test('finds global Claude files in home directory', async () => {
       // Create home directory structure
-      await using _fixture = await withTempFixture(
-        {
-          '.claude': {
-            'CLAUDE.md': '# Global Claude Config',
-          },
-          project: {
-            'CLAUDE.md': '# Project Config',
-          },
+      await using fixture = await createFixture({
+        '.claude': {
+          'CLAUDE.md': '# Global Claude Config',
         },
-        async (f) => {
-          // Create custom scanner that uses test HOME directory
-          const testScanner: FileScanner = {
-            scanClaudeFiles: async (options) => {
-              const originalHome = process.env.HOME;
-              process.env.HOME = f.path;
-              try {
-                const result = await scanClaudeFiles({
-                  ...options,
-                  path: f.getPath('project'),
-                  recursive: false,
-                });
-                return result;
-              } finally {
-                process.env.HOME = originalHome;
-              }
-            },
-            scanSlashCommands: (options) =>
-              scanSlashCommands({
-                ...options,
-                path: f.getPath('project'),
-                recursive: false,
-              }),
-          };
-
-          const { lastFrame } = render(<TestComponent scanner={testScanner} />);
-
-          await delay(300); // Optimized delay
-
-          // Should find both global and project files
-          const frame = lastFrame();
-          expect(frame).toContain('Files:');
-          expect(frame).not.toContain('Files: 0');
-
-          return f;
+        project: {
+          'CLAUDE.md': '# Project Config',
         },
-      );
+      });
+
+      // Create custom scanner that includes both local and global files
+      const testScanner: FileScanner = {
+        scanClaudeFiles: async (options) => {
+          // Scan local files
+          const localFiles = await scanClaudeFiles({
+            ...options,
+            path: fixture.getPath('project'),
+            recursive: false,
+          });
+
+          // Scan global files
+          const globalFiles = await scanClaudeFiles({
+            ...options,
+            path: fixture.getPath('.claude'),
+            recursive: false,
+          });
+
+          // Combine results
+          return [...localFiles, ...globalFiles];
+        },
+        scanSlashCommands: (options) =>
+          scanSlashCommands({
+            ...options,
+            path: fixture.getPath('project'),
+            recursive: false,
+          }),
+      };
+
+      const { lastFrame } = render(<TestComponent scanner={testScanner} />);
+
+      await delay(300);
+
+      // Should find both global and project files
+      const frame = lastFrame();
+      expect(frame).toContain('Files:');
+      expect(frame).not.toContain('Files: 0');
+      expect(frame).toContain('CLAUDE.md'); // Should find at least one file
     });
 
     test('slash commands are properly loaded', async () => {

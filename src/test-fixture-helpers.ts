@@ -3,7 +3,11 @@ import type { FileTree } from 'fs-fixture';
 import { createFixture, type FsFixture } from 'fs-fixture';
 import { match } from 'ts-pattern';
 
-// Cache for reusable fixtures to avoid recreation
+/**
+ * Cache for reusable fixtures to avoid recreation.
+ * Should be cleared after test suites complete using clearFixtureCache().
+ * Note: Cached fixtures are shared - only use for read-only tests.
+ */
 const fixturePool = new Map<string, FsFixture>();
 
 /**
@@ -208,7 +212,7 @@ export async function testWithFixture<T>(
  * Reuses existing fixtures when structure matches, improving test performance.
  * Note: Only use for read-only tests as fixtures are shared.
  */
-export async function withCachedFixture<T>(
+export async function withCachedReadOnlyFixture<T>(
   fileTree: FileTree,
   callback: (fixture: FsFixture) => Promise<T>,
 ): Promise<T> {

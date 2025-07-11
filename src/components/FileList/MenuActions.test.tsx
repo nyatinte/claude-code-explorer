@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { render } from 'ink-testing-library';
 import type { ClaudeFileInfo } from '../../_types.js';
 import { createClaudeFilePath } from '../../_types.js';
-import { withCachedFixture } from '../../test-fixture-helpers.js';
+import { withCachedReadOnlyFixture } from '../../test-fixture-helpers.js';
 import { createTestInteraction } from '../../test-interaction-helpers.js';
 import { keyboard } from '../../test-keyboard-helpers.js';
 import { delay } from '../../test-utils.js';
@@ -29,7 +29,7 @@ if (import.meta.vitest) {
 
   describe('MenuActions', () => {
     test('basic menu action display', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'CLAUDE.md': '# CLAUDE.md',
@@ -60,7 +60,7 @@ if (import.meta.vitest) {
     });
 
     test('initial selection state display', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'CLAUDE.md': '# CLAUDE.md',
@@ -85,7 +85,7 @@ if (import.meta.vitest) {
     });
 
     test('keyboard navigation information display', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'CLAUDE.md': '# CLAUDE.md',
@@ -111,7 +111,7 @@ if (import.meta.vitest) {
     });
 
     test('display with different file types', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           project: {
             '.claude': {
@@ -140,7 +140,7 @@ if (import.meta.vitest) {
     });
 
     test('all actions exist', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'CLAUDE.local.md': '# Local config',
@@ -170,7 +170,7 @@ if (import.meta.vitest) {
     });
 
     test('menu header information', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'CLAUDE.md': '# CLAUDE.md',
@@ -196,7 +196,7 @@ if (import.meta.vitest) {
     });
 
     test('menu action order', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'test.md': '# Test file',
@@ -238,7 +238,7 @@ if (import.meta.vitest) {
     });
 
     test('long file path display', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           very: {
             long: {
@@ -274,7 +274,7 @@ if (import.meta.vitest) {
     });
 
     test('file path with special characters display', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'path with spaces & symbols': {
             'file with spaces & symbols.md': '# Special file',
@@ -298,7 +298,7 @@ if (import.meta.vitest) {
     });
 
     test('global config file display', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           '.claude': {
             'CLAUDE.md': '# Global config',
@@ -323,7 +323,7 @@ if (import.meta.vitest) {
     });
 
     test('menu layout structure', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'test.md': '# Test',
@@ -352,7 +352,7 @@ if (import.meta.vitest) {
     });
 
     test('action description text verification', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'test.md': '# Test',
@@ -384,7 +384,7 @@ if (import.meta.vitest) {
     });
 
     test('keyboard shortcut display', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'test.md': '# Test',
@@ -416,7 +416,7 @@ if (import.meta.vitest) {
     });
 
     test('menu help section', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'test.md': '# Test',
@@ -446,7 +446,7 @@ if (import.meta.vitest) {
     });
 
     test('display verification with different filenames', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'config.md': '# Config',
@@ -489,7 +489,7 @@ if (import.meta.vitest) {
     });
 
     test('menu rendering stability', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'file1.md': '# File 1',
@@ -527,7 +527,7 @@ if (import.meta.vitest) {
     });
 
     test('keyboard interaction with menu', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'CLAUDE.md': '# CLAUDE.md',
@@ -568,7 +568,7 @@ if (import.meta.vitest) {
     });
 
     test('shortcut key interaction', async () => {
-      await withCachedFixture(
+      await withCachedReadOnlyFixture(
         {
           'test-project': {
             'test.md': '# Test',

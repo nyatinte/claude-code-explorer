@@ -48,12 +48,11 @@ if (import.meta.vitest) {
           const { lastFrame } = render(<Preview file={file} />);
 
           const frame = lastFrame();
-          expect(frame).toContain('CLAUDE.md');
-          // Path may be split across multiple lines in the display
           // Check that the frame contains the file name and type
-          expect(frame).toContain('ect'); // Part of the project name that appears
           expect(frame).toContain('CLAUDE.md');
           expect(frame).toContain('Type: claude-md');
+          // Path is displayed but may be wrapped, so just check it contains part of the path
+          expect(frame).toMatch(/test-project|\/CLAUDE\.md/);
         },
       );
     });
