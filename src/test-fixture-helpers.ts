@@ -15,7 +15,21 @@ const fixturePool = new Map<string, FsFixture>();
  */
 function hashFileTree(fileTree: FileTree): string {
   const hash = createHash('sha256');
-  hash.update(JSON.stringify(fileTree));
+  // Sort keys recursively for consistent serialization
+  const sortedStringify = (obj: any): string => {
+    if (obj === null || typeof obj !== 'object') {
+      return JSON.stringify(obj);
+    }
+    if (Array.isArray(obj)) {
+      return `[${obj.map(sortedStringify).join(',')}]`;
+    }
+    const sortedKeys = Object.keys(obj).sort();
+    const pairs = sortedKeys.map(
+      (key) => `${JSON.stringify(key)}:${sortedStringify(obj[key])}`,
+    );
+    return `{${pairs.join(',')}}`;
+  };
+  hash.update(sortedStringify(fileTree));
   return hash.digest('hex').substring(0, 16);
 }
 

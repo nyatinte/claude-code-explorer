@@ -447,7 +447,7 @@ if (import.meta.vitest) {
       // Extract file count and verify it's more than 1
       const fileCountMatch = frame?.match(/Files: (\d+)/);
       expect(fileCountMatch).toBeTruthy();
-      const fileCount = Number(fileCountMatch?.[1]);
+      const fileCount = Number(fileCountMatch?.[1] ?? '0');
       expect(fileCount).toBeGreaterThan(1);
       expect(frame).toContain('Selected:');
     });
