@@ -13,6 +13,23 @@
   "bugs": {
     "url": "https://github.com/nyatinte/claude-code-explorer/issues"
   },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "cli",
+    "terminal",
+    "file-explorer",
+    "file-browser",
+    "tui",
+    "react",
+    "ink",
+    "claude-md",
+    "claude-config",
+    "slash-commands",
+    "developer-tools",
+    "configuration",
+    "markdown"
+  ],
   "engines": {
     "node": ">=20"
   },
