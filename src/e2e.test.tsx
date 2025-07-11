@@ -9,6 +9,7 @@ import { delay, waitForEffects } from './test-utils.js';
 // Mock the file scanners
 vi.mock('./claude-md-scanner.js');
 vi.mock('./slash-command-scanner.js');
+vi.mock('./settings-json-scanner.js');
 
 // Mock clipboardy with default export
 vi.mock('clipboardy', () => ({
@@ -63,9 +64,11 @@ if (import.meta.vitest) {
   // Import mocked modules
   const { scanClaudeFiles } = await import('./claude-md-scanner.js');
   const { scanSlashCommands } = await import('./slash-command-scanner.js');
+  const { scanSettingsJson } = await import('./settings-json-scanner.js');
 
   const mockedScanClaudeFiles = vi.mocked(scanClaudeFiles);
   const mockedScanSlashCommands = vi.mocked(scanSlashCommands);
+  const mockedScanSettingsJson = vi.mocked(scanSettingsJson);
 
   describe('E2E Operation Flows', () => {
     beforeEach(() => {
@@ -105,6 +108,8 @@ if (import.meta.vitest) {
           namespace: undefined,
         },
       ]);
+
+      mockedScanSettingsJson.mockResolvedValue([]);
     });
 
     test('complete flow: launch, search, navigate, preview, copy', async () => {

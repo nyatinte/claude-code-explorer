@@ -10,20 +10,24 @@ import { waitForEffects } from './test-utils.js';
 // Mock the file scanners
 vi.mock('./claude-md-scanner.js');
 vi.mock('./slash-command-scanner.js');
+vi.mock('./settings-json-scanner.js');
 
 if (import.meta.vitest) {
   const { describe, test, expect, vi, beforeEach } = import.meta.vitest;
 
   const { scanClaudeFiles } = await import('./claude-md-scanner.js');
   const { scanSlashCommands } = await import('./slash-command-scanner.js');
+  const { scanSettingsJson } = await import('./settings-json-scanner.js');
 
   const mockedScanClaudeFiles = vi.mocked(scanClaudeFiles);
   const mockedScanSlashCommands = vi.mocked(scanSlashCommands);
+  const mockedScanSettingsJson = vi.mocked(scanSettingsJson);
 
   describe('Boundary Value Tests', () => {
     beforeEach(() => {
       vi.clearAllMocks();
       mockedScanSlashCommands.mockResolvedValue([]);
+      mockedScanSettingsJson.mockResolvedValue([]);
     });
 
     test('handles extremely large number of files (1000+)', async () => {

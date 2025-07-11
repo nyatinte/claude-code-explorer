@@ -11,6 +11,7 @@ import { useFileNavigation } from './useFileNavigation.js';
 // Module mocks
 vi.mock('../claude-md-scanner.js');
 vi.mock('../slash-command-scanner.js');
+vi.mock('../settings-json-scanner.js');
 
 // Test component (for testing useFileNavigation)
 function TestComponent() {
@@ -36,15 +37,23 @@ function TestComponent() {
 if (import.meta.vitest) {
   const { describe, test, expect, vi, beforeEach } = import.meta.vitest;
 
+  // Import mocked modules
+  const { scanSettingsJson } = await import('../settings-json-scanner.js');
+
   // Mock typing
   const mockedScanClaudeFiles = vi.mocked(scanClaudeFiles);
   const mockedScanSlashCommands = vi.mocked(scanSlashCommands);
+  const mockedScanSettingsJson = vi.mocked(scanSettingsJson);
 
   beforeEach(() => {
     // Reset mocks before each test
     mockedScanClaudeFiles.mockClear();
     mockedScanSlashCommands.mockClear();
+    mockedScanSettingsJson.mockClear();
     vi.clearAllTimers();
+
+    // Set default empty values
+    mockedScanSettingsJson.mockResolvedValue([]);
   });
 
   describe('useFileNavigation', () => {
