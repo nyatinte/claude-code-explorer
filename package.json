@@ -23,14 +23,11 @@
     "file-explorer",
     "file-browser",
     "tui",
-    "react",
-    "ink",
     "claude-md",
     "claude-config",
     "slash-commands",
     "developer-tools",
-    "code-explorer",
-    "markdown"
+    "code-explorer"
   ],
   "engines": {
     "node": ">=20"
