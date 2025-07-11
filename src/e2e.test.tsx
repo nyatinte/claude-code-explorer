@@ -4,7 +4,7 @@ import { App } from './App.js';
 import { createMockFile } from './test-helpers.js';
 import { createTestInteraction } from './test-interaction-helpers.js';
 import { typeKeys } from './test-keyboard-helpers.js';
-import { waitForEffects } from './test-utils.js';
+import { delay, waitForEffects } from './test-utils.js';
 
 // Mock the file scanners
 vi.mock('./claude-md-scanner.js');
@@ -111,11 +111,22 @@ if (import.meta.vitest) {
       const { stdin, lastFrame, unmount } = render(<App cliOptions={{}} />);
       const interaction = createTestInteraction(stdin, lastFrame);
 
-      // Wait for initial load
-      await waitForEffects();
+      // Wait for initial load - increase wait time for loading screen
+      await delay(50);
 
       // Debug: Print initial state
       console.log('Initial state:', interaction.getOutput());
+
+      // Wait for loading to complete and verify initial state
+      let attempts = 0;
+      while (attempts < 10) {
+        const output = interaction.getOutput();
+        if (output?.includes('Claude Files') && !output.includes('Loading')) {
+          break;
+        }
+        await delay(10);
+        attempts++;
+      }
 
       // Verify initial state - files are loaded
       interaction.verifyContent('Claude Files (5)'); // 3 claude files + 2 commands
@@ -123,18 +134,8 @@ if (import.meta.vitest) {
       // Verify header is shown
       interaction.verifyContent('Claude Code Explorer');
 
-      // WORKAROUND: The initial state might be problematic
-      // Let's try to get into a known good state first
-      console.log('Getting into a known navigation state...');
-
-      // Navigate up first to potentially reset state
-      await interaction.navigateUp();
-      await waitForEffects();
-
-      // Now navigate down to PROJECT group
-      await interaction.navigateDown();
-      await waitForEffects();
-      console.log('Should be on PROJECT group now');
+      // Start navigation from a clean state
+      console.log('Starting navigation test...');
 
       // Search for "local"
       await interaction.search('local');
@@ -190,7 +191,19 @@ if (import.meta.vitest) {
       const { stdin, lastFrame, unmount } = render(<App cliOptions={{}} />);
       const interaction = createTestInteraction(stdin, lastFrame);
 
-      await waitForEffects();
+      // Wait for loading to complete
+      await delay(50);
+
+      // Wait until content is loaded
+      let attempts = 0;
+      while (attempts < 10) {
+        const output = interaction.getOutput();
+        if (output?.includes('Claude Files') && !output.includes('Loading')) {
+          break;
+        }
+        await delay(10);
+        attempts++;
+      }
 
       // Verify initial groups display
       interaction.verifyContent([
