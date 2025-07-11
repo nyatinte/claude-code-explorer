@@ -17,6 +17,8 @@
     "claude",
     "claude-code",
     "cli",
+    "command-line",
+    "cli-tool",
     "terminal",
     "file-explorer",
     "file-browser",
@@ -27,7 +29,7 @@
     "claude-config",
     "slash-commands",
     "developer-tools",
-    "configuration",
+    "code-explorer",
     "markdown"
   ],
   "engines": {
