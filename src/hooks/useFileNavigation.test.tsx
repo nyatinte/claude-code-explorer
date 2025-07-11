@@ -462,7 +462,7 @@ if (import.meta.vitest) {
 
       const { lastFrame } = render(<TestComponent scanner={testScanner} />);
 
-      await delay(500); // Increased delay for recursive scanning
+      await delay(800); // Increased delay for recursive scanning
 
       // Should find all files recursively
       const frame = lastFrame();

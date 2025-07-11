@@ -1,5 +1,5 @@
 import { basename } from 'node:path';
-import { Box, Text, useFocus, useInput } from 'ink';
+import { Box, Text, useInput } from 'ink';
 import React, { useEffect, useMemo, useState } from 'react';
 import type {
   ClaudeFileInfo,
@@ -41,7 +41,6 @@ const FileList = React.memo(function FileList({
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [isMenuMode, setIsMenuMode] = useState(false);
   const [isGroupSelected, setIsGroupSelected] = useState(false);
-  const { isFocused } = useFocus({ autoFocus: true });
 
   // Filtered groups after search (memoized)
   const filteredGroups = useMemo(() => {
@@ -229,7 +228,7 @@ const FileList = React.memo(function FileList({
         onSearchQueryChange?.(searchQuery + input);
       }
     },
-    { isActive: isFocused && !isMenuMode },
+    { isActive: !isMenuMode },
   );
 
   return (
@@ -281,7 +280,6 @@ const FileList = React.memo(function FileList({
                         !isGroupSelected &&
                         groupIndex === currentGroupIndex &&
                         fileIndex === currentFileIndex &&
-                        isFocused &&
                         !isMenuMode
                       }
                     />
