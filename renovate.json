@@ -11,6 +11,6 @@
   "platformAutomerge": true,
   "dependencyDashboard": false,
   "automerge": true,
-  "branchConcurrentLimit": 0,
+  "branchConcurrentLimit": 3,
   "stabilityDays": 3
 }
