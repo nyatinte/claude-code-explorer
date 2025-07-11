@@ -1,3 +1,4 @@
+import { homedir } from 'node:os';
 import { basename, dirname } from 'node:path';
 import { Badge } from '@inkjs/ui';
 import { Box, Text } from 'ink';
@@ -69,7 +70,14 @@ export const FileItem = React.memo(function FileItem({
       return fileName.replace('.md', ''); // Remove .md for commands
     }
     if (file.type === 'settings-json' || file.type === 'settings-local-json') {
-      // For settings files, show 3 levels: grandparent/parent/filename
+      // Check if this is a global settings file in home directory
+      const homeDir = homedir();
+      if (file.path.startsWith(homeDir)) {
+        const relativePath = file.path.slice(homeDir.length);
+        return `~${relativePath}`;
+      }
+
+      // For project settings files, show 3 levels: grandparent/parent/filename
       const parts = file.path.split('/');
       const claudeIndex = parts.lastIndexOf('.claude');
       if (claudeIndex > 0 && parts[claudeIndex - 1]) {

@@ -68,7 +68,7 @@ export const scanSettingsJson = async (
     if (globalPath !== path) {
       const globalFiles = await findSettingsJson({
         path: globalPath,
-        recursive: true,
+        recursive: false,
         includeHidden,
       });
       paths.push(...globalFiles);
