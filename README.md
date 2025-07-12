@@ -67,33 +67,6 @@ npx ccexp@latest
 pnpm dlx ccexp@latest
 ```
 
-### Shell Alias (Recommended for Frequent Use)
-
-The command `npx ccexp` can be short, but we still recommend setting up a shell alias:
-
-```bash
-# Add to ~/.bashrc, ~/.zshrc, or your shell's config file
-alias ccexp="npx ccexp@latest"
-
-# For Bun users
-alias ccexp="bunx ccexp@latest"
-
-# For pnpm users
-alias ccexp="pnpm dlx ccexp@latest"
-```
-
-After adding the alias, reload your shell configuration:
-
-```bash
-source ~/.bashrc    # or ~/.zshrc
-```
-
-Now you can simply run:
-
-```bash
-ccexp               # Launch in current directory
-ccexp --path ~/projects  # Scan specific directory
-```
 
 ### Global Installation
 
