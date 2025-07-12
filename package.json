@@ -55,7 +55,7 @@
     "knip": "knip",
     "ci": "concurrently --kill-others-on-fail --success all -n \"build,check,typecheck,knip,test\" -c \"cyan,green,yellow,magenta,blue\" \"bun run build\" \"bun run check\" \"bun run typecheck\" \"bun run knip\" \"bun run test\"",
     "prepack": "bun run build && clean-pkg-json",
-    "release": "bun run check && bun run typecheck && bun run test && bun run build && bumpp"
+    "release": "bun run ci && LEFTHOOK=0 bumpp"
   },
   "devDependencies": {
     "@biomejs/biome": "2.0.6",
