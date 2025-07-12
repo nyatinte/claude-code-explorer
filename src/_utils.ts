@@ -222,6 +222,11 @@ export const isBinaryFile = async (filePath: string): Promise<boolean> => {
 // InSource tests
 if (import.meta.vitest != null) {
   const { describe, test, expect } = import.meta.vitest;
+  const {
+    createClaudeProjectFixture,
+    createComplexProjectFixture,
+    testWithFixture,
+  } = await import('./test-fixture-helpers.js');
 
   describe('parseSlashCommandName', () => {
     test('should convert file path to command name', () => {
@@ -362,22 +367,303 @@ if (import.meta.vitest != null) {
       expect(normalizeFilePath('simple.md')).toBe('simple.md');
       expect(normalizeFilePath('folder/file.md')).toBe('folder/file.md');
     });
+
+    test('should throw error for invalid file paths', () => {
+      // The createClaudeFilePath validation is what throws the error
+      // Test with paths that will fail the zod validation
+      expect(() => normalizeFilePath('')).toThrow();
+    });
   });
 
   describe('isBinaryFile', () => {
     test('should detect text files as non-binary', async () => {
-      // Mock text data
-      const textBuffer = Buffer.from('Hello world\nThis is a text file');
+      await testWithFixture(
+        {
+          'test.txt': 'Hello world\nThis is a text file',
+          'README.md': '# Project\n\nThis is markdown',
+          'config.json': JSON.stringify({ key: 'value' }, null, 2),
+        },
+        async (f) => {
+          const textResult = await isBinaryFile(f.getPath('test.txt'));
+          expect(textResult).toBe(false);
 
-      // Note: Actual file system tests are done in integration tests
-      expect(textBuffer.includes(0)).toBe(false);
+          const mdResult = await isBinaryFile(f.getPath('README.md'));
+          expect(mdResult).toBe(false);
+
+          const jsonResult = await isBinaryFile(f.getPath('config.json'));
+          expect(jsonResult).toBe(false);
+        },
+      );
     });
 
     test('should detect binary files with null bytes', async () => {
-      // Mock binary file content
-      const binaryBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01]); // PNG header with null byte
+      const { createFixture } = await import('fs-fixture');
+      const { writeFile } = await import('node:fs/promises');
 
-      expect(binaryBuffer.includes(0)).toBe(true);
+      // Create fixture with empty files first
+      await using fixture = await createFixture({
+        'image.png': '',
+        'binary.dat': '',
+      });
+
+      // Then write binary data directly
+      const pngData = Buffer.from([
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00,
+      ]);
+      const binData = Buffer.from([0x00, 0x01, 0x02, 0x00, 0x04]);
+
+      await writeFile(fixture.getPath('image.png'), pngData);
+      await writeFile(fixture.getPath('binary.dat'), binData);
+
+      const pngResult = await isBinaryFile(fixture.getPath('image.png'));
+      expect(pngResult).toBe(true);
+
+      const datResult = await isBinaryFile(fixture.getPath('binary.dat'));
+      expect(datResult).toBe(true);
+    });
+
+    test('should handle non-existent files gracefully', async () => {
+      const result = await isBinaryFile('/non/existent/file.txt');
+      expect(result).toBe(false);
+    });
+
+    test('should handle permission errors gracefully', async () => {
+      await testWithFixture(
+        {
+          'protected.txt': 'Protected content',
+        },
+        async (f) => {
+          const { chmod } = await import('node:fs/promises');
+          const filePath = f.getPath('protected.txt');
+
+          // Remove read permissions
+          await chmod(filePath, 0o000);
+
+          try {
+            const result = await isBinaryFile(filePath);
+            expect(result).toBe(false); // Should return false on error
+          } finally {
+            // Restore permissions for cleanup
+            await chmod(filePath, 0o644);
+          }
+        },
+      );
+    });
+  });
+
+  describe('analyzeProjectInfo', () => {
+    test('should analyze JavaScript/TypeScript project', async () => {
+      await using fixture = await createComplexProjectFixture();
+
+      const projectInfo = await analyzeProjectInfo(fixture.getPath('my-app'));
+
+      expect(projectInfo.language).toBe('JavaScript/TypeScript');
+      expect(projectInfo.dependencies).toContain('react');
+      expect(projectInfo.dependencies).toContain('typescript');
+      expect(projectInfo.buildCommands).toContain('npm run build');
+      expect(projectInfo.testCommands).toContain('npm run test');
+    });
+
+    test('should detect framework from package.json', async () => {
+      await testWithFixture(
+        {
+          nextjs: {
+            'package.json': JSON.stringify({
+              name: 'nextjs-app',
+              dependencies: {
+                next: '^14.0.0',
+                react: '^18.0.0',
+              },
+              scripts: {
+                build: 'next build',
+                test: 'jest',
+              },
+            }),
+            'next.config.js':
+              '/** @type {import("next").NextConfig} */\nmodule.exports = {}',
+          },
+          react: {
+            'package.json': JSON.stringify({
+              name: 'react-app',
+              dependencies: {
+                react: '^18.0.0',
+                'react-dom': '^18.0.0',
+              },
+            }),
+            src: {
+              'App.tsx': 'export const App = () => <div>Hello</div>',
+            },
+          },
+        },
+        async (f) => {
+          const nextjsInfo = await analyzeProjectInfo(f.getPath('nextjs'));
+          expect(nextjsInfo.framework).toBe('Next.js');
+
+          const reactInfo = await analyzeProjectInfo(f.getPath('react'));
+          expect(reactInfo.framework).toBe('React');
+        },
+      );
+    });
+
+    test('should handle missing package.json', async () => {
+      await testWithFixture(
+        {
+          'no-package': {
+            'README.md': '# Project without package.json',
+          },
+        },
+        async (f) => {
+          const projectInfo = await analyzeProjectInfo(f.getPath('no-package'));
+          expect(projectInfo.language).toBeUndefined();
+          expect(projectInfo.dependencies).toBeUndefined();
+          expect(projectInfo.buildCommands).toBeUndefined();
+        },
+      );
+    });
+
+    test('should handle invalid package.json gracefully', async () => {
+      await testWithFixture(
+        {
+          'invalid-package': {
+            'package.json': '{ invalid json }',
+          },
+        },
+        async (f) => {
+          const projectInfo = await analyzeProjectInfo(
+            f.getPath('invalid-package'),
+          );
+          expect(projectInfo.isIncomplete).toBe(true);
+        },
+      );
+    });
+
+    test('should detect various build and test commands', async () => {
+      await testWithFixture(
+        {
+          'multi-scripts': {
+            'package.json': JSON.stringify({
+              scripts: {
+                build: 'webpack',
+                'build:prod': 'webpack --mode production',
+                'build:dev': 'webpack --mode development',
+                test: 'jest',
+                'test:watch': 'jest --watch',
+                'test:coverage': 'jest --coverage',
+              },
+            }),
+          },
+        },
+        async (f) => {
+          const projectInfo = await analyzeProjectInfo(
+            f.getPath('multi-scripts'),
+          );
+          expect(projectInfo.buildCommands).toHaveLength(3);
+          expect(projectInfo.buildCommands).toContain('npm run build');
+          expect(projectInfo.buildCommands).toContain('npm run build:prod');
+          expect(projectInfo.buildCommands).toContain('npm run build:dev');
+          expect(projectInfo.testCommands).toHaveLength(3);
+          expect(projectInfo.testCommands).toContain('npm run test');
+          expect(projectInfo.testCommands).toContain('npm run test:watch');
+          expect(projectInfo.testCommands).toContain('npm run test:coverage');
+        },
+      );
+    });
+
+    test('should handle directory read errors gracefully', async () => {
+      const result = await analyzeProjectInfo('/non/existent/directory');
+      // analyzeProjectInfo returns empty object for missing directories
+      expect(result.language).toBeUndefined();
+      expect(result.dependencies).toBeUndefined();
+      expect(result.buildCommands).toBeUndefined();
+    });
+
+    test('should handle malformed package.json with extra properties', async () => {
+      await testWithFixture(
+        {
+          'edge-case': {
+            'package.json': JSON.stringify({
+              name: 'edge-case-project',
+              unknownField: 'should be ignored',
+              dependencies: {
+                react: '^18.0.0',
+              },
+              scripts: {
+                build: 'webpack',
+              },
+            }),
+          },
+        },
+        async (f) => {
+          const projectInfo = await analyzeProjectInfo(f.getPath('edge-case'));
+          // Should still parse successfully due to passthrough()
+          expect(projectInfo.language).toBe('JavaScript/TypeScript');
+          expect(projectInfo.dependencies).toContain('react');
+          expect(projectInfo.buildCommands).toContain('npm run build');
+        },
+      );
+    });
+  });
+
+  describe('validateClaudeMdContent with real files', () => {
+    test('should validate actual CLAUDE.md files', async () => {
+      await using fixture = await createClaudeProjectFixture({
+        projectName: 'validate-test',
+      });
+
+      const { readFile } = await import('node:fs/promises');
+      const content = await readFile(
+        fixture.getPath('validate-test/CLAUDE.md'),
+        'utf-8',
+      );
+      expect(validateClaudeMdContent(content)).toBe(true);
+    });
+  });
+
+  describe('extractCommandsFromContent with real files', () => {
+    test('should extract commands from slash command files', async () => {
+      await testWithFixture(
+        {
+          '.claude': {
+            commands: {
+              'deploy.md':
+                '# Deploy Command\n\n/deploy <environment>\n\nDeploys to specified environment',
+              'test.md':
+                '/test [--watch] [--coverage]\n\nRuns tests with optional flags',
+              'lint.md': '/lint\n\nRuns linting checks',
+            },
+          },
+        },
+        async (f) => {
+          const { readFile } = await import('node:fs/promises');
+
+          const deployContent = await readFile(
+            f.getPath('.claude/commands/deploy.md'),
+            'utf-8',
+          );
+          const deployCommands = extractCommandsFromContent(deployContent);
+          expect(deployCommands).toHaveLength(1);
+          expect(deployCommands[0]?.name).toBe('deploy');
+          expect(deployCommands[0]?.hasArguments).toBe(true);
+
+          const testContent = await readFile(
+            f.getPath('.claude/commands/test.md'),
+            'utf-8',
+          );
+          const testCommands = extractCommandsFromContent(testContent);
+          expect(testCommands).toHaveLength(1);
+          expect(testCommands[0]?.name).toBe('test');
+          expect(testCommands[0]?.hasArguments).toBe(true);
+
+          const lintContent = await readFile(
+            f.getPath('.claude/commands/lint.md'),
+            'utf-8',
+          );
+          const lintCommands = extractCommandsFromContent(lintContent);
+          expect(lintCommands).toHaveLength(1);
+          expect(lintCommands[0]?.name).toBe('lint');
+          expect(lintCommands[0]?.hasArguments).toBe(false);
+        },
+      );
     });
   });
 }

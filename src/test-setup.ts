@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import { clearFixtureCache } from './test-fixture-helpers.js';
 
 // Global mock setup for external dependencies
 
@@ -43,4 +44,9 @@ beforeEach(() => {
 
 afterEach(() => {
   console.error = originalConsoleError;
+});
+
+// Clean up fixture cache after all tests complete
+afterAll(async () => {
+  await clearFixtureCache();
 });

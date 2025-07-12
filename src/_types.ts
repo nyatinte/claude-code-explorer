@@ -62,6 +62,19 @@ export type ScanOptions = {
   readonly includeHidden?: boolean | undefined;
 };
 
+// File scanner interface for dependency injection
+export type FileScanner = {
+  readonly scanClaudeFiles: (
+    options?: ScanOptions,
+  ) => Promise<ClaudeFileInfo[]>;
+  readonly scanSlashCommands: (
+    options?: ScanOptions,
+  ) => Promise<SlashCommandInfo[]>;
+  readonly scanSettingsJson: (
+    options?: ScanOptions,
+  ) => Promise<ClaudeFileInfo[]>;
+};
+
 // Grouped files for UI display
 export type FileGroup = {
   readonly type: ClaudeFileType;

@@ -3,12 +3,11 @@ import type {
   ClaudeFileInfo,
   ClaudeFileType,
   FileGroup,
+  FileScanner,
   ScanOptions,
   SlashCommandInfo,
 } from '../_types.js';
-import { scanClaudeFiles } from '../claude-md-scanner.js';
-import { scanSettingsJson } from '../settings-json-scanner.js';
-import { scanSlashCommands } from '../slash-command-scanner.js';
+import { defaultScanner } from '../default-scanner.js';
 
 // Union type to unify ClaudeFileInfo and SlashCommandInfo
 type NavigationFile = ClaudeFileInfo;
@@ -44,6 +43,7 @@ type UseFileNavigationReturn = {
 
 export function useFileNavigation(
   options: ScanOptions = {},
+  scanner: FileScanner = defaultScanner,
 ): UseFileNavigationReturn {
   const [files, setFiles] = useState<NavigationFile[]>([]);
   const [fileGroups, setFileGroups] = useState<FileGroup[]>([]);
@@ -60,9 +60,9 @@ export function useFileNavigation(
     // Execute file scan
     const scanOptions = { recursive, path };
     Promise.all([
-      scanClaudeFiles(scanOptions),
-      scanSlashCommands(scanOptions),
-      scanSettingsJson(scanOptions),
+      scanner.scanClaudeFiles(scanOptions),
+      scanner.scanSlashCommands(scanOptions),
+      scanner.scanSettingsJson(scanOptions),
     ])
       .then(([claudeFiles, slashCommands, settingsFiles]) => {
         // Convert slash commands to ClaudeFileInfo format
@@ -136,7 +136,7 @@ export function useFileNavigation(
         setError(err.message || 'Failed to scan files');
         setIsLoading(false);
       });
-  }, [path, recursive]);
+  }, [path, recursive, scanner]);
 
   const selectFile = useCallback((file: NavigationFile): void => {
     setSelectedFile(file);

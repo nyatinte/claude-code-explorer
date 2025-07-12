@@ -1,0 +1,16 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "vulnerabilityAlerts": {
+    "labels": ["security"]
+  },
+  "labels": ["dependencies", "renovate"],
+  "rangeStrategy": "bump",
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "platformAutomerge": true,
+  "dependencyDashboard": false,
+  "automerge": true,
+  "branchConcurrentLimit": 3,
+  "stabilityDays": 3
+}
