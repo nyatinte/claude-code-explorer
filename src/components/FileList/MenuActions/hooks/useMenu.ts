@@ -166,6 +166,14 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
             destPath = join(cwd, basename(file.path));
           }
 
+          // Copy operation encapsulated in a function
+          const performCopy = async () => {
+            const destDir = dirname(destPath);
+            await fs.mkdir(destDir, { recursive: true });
+            await fs.copyFile(file.path, destPath);
+            return `✅ Copied to ${destPath}`;
+          };
+
           // Check if file already exists
           try {
             await fs.access(destPath);
@@ -174,25 +182,26 @@ export const useMenu = ({ file, onClose }: UseMenuProps) => {
               `File "${basename(destPath)}" already exists. Overwrite?`,
             );
             setIsConfirming(true);
-            setPendingAction(() => async () => {
-              // Create directory if needed
-              const destDir = dirname(destPath);
-              await fs.mkdir(destDir, { recursive: true });
-
-              // Copy file
-              await fs.copyFile(file.path, destPath);
-              return `✅ Copied to ${destPath}`;
-            });
+            // The action to be executed after confirmation
+            setPendingAction(() => performCopy);
 
             // Return early, action will be executed after confirmation
             return '';
-          } catch {
-            // File doesn't exist, proceed with copy
-            const destDir = dirname(destPath);
-            await fs.mkdir(destDir, { recursive: true });
-
-            await fs.copyFile(file.path, destPath);
-            return `✅ Copied to ${destPath}`;
+          } catch (error) {
+            // Handle specific error cases
+            if (
+              error &&
+              typeof error === 'object' &&
+              'code' in error &&
+              error.code === 'ENOENT'
+            ) {
+              // File doesn't exist, proceed with copy immediately
+              return await performCopy();
+            }
+            // Other errors (permissions, disk full, etc.)
+            throw new Error(
+              `Failed to check destination file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
           }
         },
       },
