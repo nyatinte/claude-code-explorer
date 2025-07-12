@@ -26,6 +26,10 @@ bun run check:unsafe          # Biome unsafe auto-fix
 bun run knip                  # Check for unused dependencies/exports
 bun run ci                    # Full CI pipeline (build + check + typecheck + knip + test)
 
+# Release Management
+bun run release               # Interactive version bumping with bumpp
+bun run prepack              # Pre-publish build and package.json cleanup
+
 # CLI Usage
 ./dist/index.js               # Interactive React Ink TUI mode
 bun run start                 # Development mode with hot reload
@@ -56,24 +60,52 @@ src/
 │   ├── FileList/      # File navigation and menu
 │   │   ├── FileList.tsx      # Main file list with search
 │   │   ├── FileItem.tsx      # Individual file item
-│   │   ├── MenuActions.tsx   # File action menu
+│   │   ├── FileGroup.tsx     # File grouping by type
+│   │   ├── MenuActions/      # File action menu module
+│   │   │   ├── index.tsx     # Main menu component
+│   │   │   ├── Footer.tsx    # Menu footer controls
+│   │   │   ├── Header.tsx    # Menu header
+│   │   │   ├── MenuItem.tsx  # Individual menu item
+│   │   │   ├── MenuList.tsx  # Menu item container
+│   │   │   ├── StatusMessage.tsx # Action feedback
+│   │   │   ├── types.ts      # Menu types
+│   │   │   └── hooks/
+│   │   │       └── useMenu.ts    # Menu state management
 │   │   └── *.test.tsx        # Component tests
 │   ├── Layout/        # Layout components
 │   │   ├── SplitPane.tsx     # Two-pane layout
 │   │   └── *.test.tsx        # Layout tests
 │   ├── Preview/       # Content preview
 │   │   ├── Preview.tsx       # File preview pane
-│   │   └── MarkdownPreview.tsx # Markdown renderer
-│   └── ErrorBoundary.tsx     # Error handling component
+│   │   ├── MarkdownPreview.tsx # Markdown renderer
+│   │   └── *.test.tsx        # Preview tests
+│   ├── ErrorBoundary.tsx     # Error handling component
+│   ├── ErrorBoundary.test.tsx # Boundary tests
+│   ├── LoadingScreen.tsx     # Loading UI component
+│   └── LoadingScreen.test.tsx # Loading tests
 ├── hooks/             # React hooks
 │   ├── useFileNavigation.tsx # File scanning and state
+│   ├── useFileNavigation.test.tsx # Hook tests
 │   └── index.ts       # Hook exports
 ├── _types.ts          # Type definitions (including branded types)
 ├── _consts.ts         # Constants and configuration
 ├── _utils.ts          # Utility functions with InSource tests
+├── base-file-scanner.ts    # Abstract scanner base class
 ├── claude-md-scanner.ts    # CLAUDE.md file scanner
 ├── slash-command-scanner.ts # Slash command scanner
+├── default-scanner.ts      # Default file scanner implementation
 ├── fast-scanner.ts    # High-performance file scanner
+├── scan-exclusions.ts # File/directory exclusion patterns
+├── test-*.ts          # Test helpers and utilities
+│   ├── test-setup.ts        # Global test setup
+│   ├── test-utils.ts        # Common test utilities
+│   ├── test-fixture-helpers.ts # fs-fixture utilities
+│   ├── test-keyboard-helpers.ts # Keyboard interaction testing
+│   ├── test-interaction-helpers.ts # UI interaction testing
+│   └── test-navigation.ts   # Navigation test helpers
+├── boundary.test.tsx  # Error boundary integration tests
+├── e2e.test.tsx       # End-to-end tests
+├── vitest.d.ts        # Vitest type definitions
 ├── App.tsx            # Main React application
 └── index.tsx          # Entry point with React Ink render
 ```
@@ -154,13 +186,34 @@ src/
    }, { isActive: true });
    ```
 
+6. **Scanner Hierarchy**: Modular scanner architecture with base class
+
+   ```typescript
+   // Base scanner provides common functionality
+   export abstract class BaseFileScanner {
+     constructor(protected basePath: string) {}
+     abstract scan(): Promise<ClaudeFileInfo[]>;
+   }
+   
+   // Specialized scanners extend base
+   export class ClaudeMdScanner extends BaseFileScanner { }
+   export class SlashCommandScanner extends BaseFileScanner { }
+   export class DefaultScanner extends BaseFileScanner { }
+   ```
+
 ### Data Flow Architecture
 
-- **Scanners**: `claude-md-scanner.ts` + `slash-command-scanner.ts` → discover files
+- **Scanners**: Multiple specialized scanners → discover files
+  - `base-file-scanner.ts` → Abstract base class for all scanners
+  - `claude-md-scanner.ts` → CLAUDE.md file discovery
+  - `slash-command-scanner.ts` → Slash command discovery
+  - `default-scanner.ts` → Combined scanner for all file types
+  - `fast-scanner.ts` → High-performance directory traversal
 - **Type System**: `_types.ts` → branded types + zod schemas for data integrity  
 - **React State**: `useFileNavigation` hook → file loading and selection state
 - **Components**: React Ink components → interactive terminal UI
 - **File Operations**: clipboard, file opening via system integrations
+- **Exclusions**: `scan-exclusions.ts` → Configurable file/directory filtering
 
 ### Target File Discovery
 
@@ -180,7 +233,9 @@ The tool automatically discovers these file types:
 - `noImplicitReturns: true` → All code paths must return
 - Immutable design with `readonly` properties throughout
 
-### Testing Philosophy
+### Testing Philosophy & Strategy
+
+#### Core Testing Principles
 
 - **InSource Testing**: Tests live with source code for component co-location
 - **fs-fixture**: File system test fixtures for reliable testing
@@ -188,6 +243,74 @@ The tool automatically discovers these file types:
 - **vitest globals**: `describe`/`test`/`expect` available without imports
 - **No test shortcuts**: All quality checks must pass before completion
 - **Comprehensive coverage**: React components, hooks, and business logic tested
+
+#### Efficient Test Architecture with fs-fixture
+
+The project employs a sophisticated testing strategy using `fs-fixture` for creating isolated file system environments:
+
+```typescript
+// Example from test-fixture-helpers.ts
+export const createTestFixture = async (structure: DirectoryStructure) => {
+  const fixture = await createFixture(structure);
+  return {
+    fixture,
+    paths: {
+      root: fixture.path,
+      claudeMd: join(fixture.path, 'CLAUDE.md'),
+      localMd: join(fixture.path, 'CLAUDE.local.md'),
+      // ... other paths
+    },
+    cleanup: () => fixture.rm(),
+  };
+};
+```
+
+#### Dependency Injection for Testability
+
+All file scanners support path injection, enabling efficient unit testing without actual file system operations:
+
+```typescript
+// Scanner design with injectable base path
+export class ClaudeMdScanner extends BaseFileScanner {
+  constructor(basePath?: string) {
+    super(basePath ?? process.cwd());
+  }
+}
+
+// In tests - inject test fixture path
+const { fixture, paths } = await createTestFixture({
+  'CLAUDE.md': '# Test content',
+});
+const scanner = new ClaudeMdScanner(paths.root);
+```
+
+#### Test Helper Architecture
+
+- **test-fixture-helpers.ts**: Factory functions for creating test file structures
+- **test-keyboard-helpers.ts**: Keyboard event simulation for React Ink components
+- **test-interaction-helpers.ts**: UI interaction testing utilities
+- **test-navigation.ts**: Navigation flow testing helpers
+- **test-utils.ts**: Common testing utilities and assertions
+
+#### Testing Configuration
+
+**vitest.config.ts**:
+```typescript
+export default defineConfig({
+  test: {
+    includeSource: ['src/**/*.{js,ts,tsx}'],
+    globals: true,
+    environment: 'node',
+    setupFiles: ['./src/test-setup.ts'],
+  },
+});
+```
+
+This configuration enables:
+- InSource testing pattern
+- Global test functions without imports
+- Proper React JSX transformation
+- Consistent test environment setup
 
 ### React Ink User Experience
 
@@ -199,6 +322,12 @@ The tool automatically discovers these file types:
 - **Focus management**: `isActive` pattern prevents input conflicts
 - **Error handling**: StatusMessage component with graceful degradation
 - **Loading states**: Spinner component during file scanning
+- **File grouping**: Organized display by file type with collapsible groups
+  - CLAUDE.md files (Project configurations)
+  - CLAUDE.local.md files (Local overrides)
+  - Global CLAUDE.md (User-wide settings)
+  - Slash commands (Custom command definitions)
+  - Groups can be collapsed/expanded with arrow keys
 
 ## Quality Management Rules
 
