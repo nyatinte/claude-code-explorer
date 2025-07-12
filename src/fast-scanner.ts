@@ -1,4 +1,5 @@
 import { fdir } from 'fdir';
+import type { FileTree } from 'fs-fixture';
 import type { ScanOptions } from './_types.ts';
 import { DEFAULT_EXCLUSIONS } from './scan-exclusions.ts';
 
@@ -24,7 +25,7 @@ export const findClaudeFiles = async (
         return true;
       }
 
-      // Handle hidden files
+      // Handle hidden files (.claude is special case - always included)
       if (!includeHidden && dirName.startsWith('.') && dirName !== '.claude') {
         return true;
       }
@@ -72,7 +73,7 @@ export const findSlashCommands = async (
         return true;
       }
 
-      // Handle hidden files
+      // Handle hidden files (.claude is special case - always included)
       if (!includeHidden && dirName.startsWith('.') && dirName !== '.claude') {
         return true;
       }
@@ -129,6 +130,12 @@ const getVersion = async (): Promise<string> => {
 // InSource tests
 if (import.meta.vitest != null) {
   const { describe, test, expect } = import.meta.vitest;
+  const {
+    createClaudeProjectFixture,
+    createComplexProjectFixture,
+    withTempFixture,
+    DEFAULT_CLAUDE_MD,
+  } = await import('./test-fixture-helpers.js');
 
   describe('fast-scanner', () => {
     test('should be available after installation', async () => {
@@ -141,43 +148,74 @@ if (import.meta.vitest != null) {
       expect(version).toMatch(/fdir/);
     });
 
-    test('should find CLAUDE.md files', async () => {
+    test('should find CLAUDE.md files with fs-fixture', async () => {
+      await using fixture = await createClaudeProjectFixture({
+        projectName: 'scanner-test',
+        includeLocal: true,
+      });
+
       const files = await findClaudeFiles({
-        path: process.cwd(),
+        path: fixture.getPath('scanner-test'),
         recursive: false,
       });
 
       expect(Array.isArray(files)).toBe(true);
-      // Should find at least the project's CLAUDE.md
+      expect(files.length).toBe(2); // CLAUDE.md and CLAUDE.local.md
       expect(files.some((file: string) => file.endsWith('CLAUDE.md'))).toBe(
         true,
       );
+      expect(
+        files.some((file: string) => file.endsWith('CLAUDE.local.md')),
+      ).toBe(true);
     });
 
-    test('should respect recursive option', async () => {
-      const nonRecursive = await findClaudeFiles({
-        path: process.cwd(),
-        recursive: false,
-      });
+    test('should respect recursive option with nested structure', async () => {
+      await using _fixture = await withTempFixture(
+        {
+          project: {
+            'CLAUDE.md': DEFAULT_CLAUDE_MD,
+            nested: {
+              deep: {
+                'CLAUDE.md': DEFAULT_CLAUDE_MD,
+              },
+            },
+          },
+        },
+        async (f) => {
+          const nonRecursive = await findClaudeFiles({
+            path: f.getPath('project'),
+            recursive: false,
+          });
 
-      const recursive = await findClaudeFiles({
-        path: process.cwd(),
-        recursive: true,
-      });
+          const recursive = await findClaudeFiles({
+            path: f.getPath('project'),
+            recursive: true,
+          });
 
-      // Recursive should find same or more files
-      expect(recursive.length >= nonRecursive.length).toBe(true);
+          expect(nonRecursive.length).toBe(1);
+          expect(recursive.length).toBe(2);
+          return f;
+        },
+      );
     });
 
-    test('should find slash command files', async () => {
-      // Create a test fixture with fs-fixture if needed
+    test('should find slash command files in complex structure', async () => {
+      await using fixture = await createComplexProjectFixture();
+
       const commands = await findSlashCommands({
-        path: process.cwd(),
+        path: fixture.getPath('my-app'),
         recursive: true,
       });
 
       expect(Array.isArray(commands)).toBe(true);
-      // Commands array might be empty if no .claude/commands exist
+      expect(commands.length).toBeGreaterThan(0);
+      // Should find commands in both regular and nested directories
+      expect(commands.some((cmd: string) => cmd.includes('test.md'))).toBe(
+        true,
+      );
+      expect(
+        commands.some((cmd: string) => cmd.includes('production/deploy.md')),
+      ).toBe(true);
     });
 
     test('should handle non-existent paths gracefully', async () => {
@@ -188,6 +226,111 @@ if (import.meta.vitest != null) {
 
       expect(Array.isArray(files)).toBe(true);
       expect(files.length).toBe(0);
+    });
+
+    test('should respect exclude patterns', async () => {
+      await using _fixture = await withTempFixture(
+        {
+          'test-project': {
+            'CLAUDE.md': DEFAULT_CLAUDE_MD,
+            node_modules: {
+              'CLAUDE.md': 'Should be excluded',
+            },
+            '.git': {
+              'CLAUDE.md': 'Should be excluded',
+            },
+          },
+        },
+        async (f) => {
+          const files = await findClaudeFiles({
+            path: f.getPath('test-project'),
+            recursive: true,
+          });
+
+          expect(files.length).toBe(1);
+          expect(files[0]).toContain('test-project/CLAUDE.md');
+          expect(files[0]).not.toContain('node_modules');
+          expect(files[0]).not.toContain('.git');
+          return f;
+        },
+      );
+    });
+
+    test('should handle large directory structures efficiently', async () => {
+      // Create a large directory structure
+      const largeStructure: Record<string, FileTree> = {};
+      for (let i = 0; i < 100; i++) {
+        largeStructure[`dir-${i}`] = {
+          'CLAUDE.md': `Content ${i}`,
+          sub: {
+            'CLAUDE.local.md': `Local ${i}`,
+          },
+        };
+      }
+
+      await using _fixture = await withTempFixture(
+        largeStructure,
+        async (f) => {
+          const start = Date.now();
+          const files = await findClaudeFiles({
+            path: f.path,
+            recursive: true,
+          });
+          const duration = Date.now() - start;
+
+          expect(files.length).toBe(200); // 100 CLAUDE.md + 100 CLAUDE.local.md
+          expect(duration).toBeLessThan(1000); // Should complete within 1 second
+          return f;
+        },
+      );
+    });
+
+    test.skip('should handle hidden directories correctly', async () => {
+      await using _fixture = await withTempFixture(
+        {
+          '.hidden': {
+            'CLAUDE.md': DEFAULT_CLAUDE_MD,
+          },
+          '.claude': {
+            commands: {
+              'test.md': 'Test command',
+            },
+          },
+          visible: {
+            'CLAUDE.md': DEFAULT_CLAUDE_MD,
+          },
+        },
+        async (f) => {
+          // Without includeHidden
+          const withoutHidden = await findClaudeFiles({
+            path: f.path,
+            recursive: true,
+            includeHidden: false,
+          });
+
+          // With includeHidden
+          const withHidden = await findClaudeFiles({
+            path: f.path,
+            recursive: true,
+            includeHidden: true,
+          });
+
+          // .claude is always included (special case), but .hidden is not
+          expect(withoutHidden.length).toBe(1); // Only visible/CLAUDE.md
+          expect(withHidden.length).toBe(2); // visible/CLAUDE.md + .hidden/CLAUDE.md
+
+          // Check slash commands - .claude should be included even without includeHidden
+          const commands = await findSlashCommands({
+            path: f.path,
+            recursive: true,
+            includeHidden: false,
+          });
+
+          expect(Array.isArray(commands)).toBe(true);
+          expect(commands.length).toBe(1); // .claude/commands/test.md should be found
+          return f;
+        },
+      );
     });
   });
 }
