@@ -16,7 +16,7 @@ const fixturePool = new Map<string, FsFixture>();
 function hashFileTree(fileTree: FileTree): string {
   const hash = createHash('sha256');
   // Sort keys recursively for consistent serialization
-  const sortedStringify = (obj: any): string => {
+  const sortedStringify = (obj: unknown): string => {
     if (obj === null || typeof obj !== 'object') {
       return JSON.stringify(obj);
     }
@@ -24,9 +24,10 @@ function hashFileTree(fileTree: FileTree): string {
       return `[${obj.map(sortedStringify).join(',')}]`;
     }
     const sortedKeys = Object.keys(obj).sort();
-    const pairs = sortedKeys.map(
-      (key) => `${JSON.stringify(key)}:${sortedStringify(obj[key])}`,
-    );
+    const pairs = sortedKeys.map((key) => {
+      const value = (obj as Record<string, unknown>)[key];
+      return `${JSON.stringify(key)}:${sortedStringify(value)}`;
+    });
     return `{${pairs.join(',')}}`;
   };
   hash.update(sortedStringify(fileTree));
