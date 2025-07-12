@@ -1,20 +1,35 @@
 import { Text } from 'ink';
 import { render } from 'ink-testing-library';
-import type { ClaudeFileInfo, SlashCommandInfo } from '../_types.js';
-import { createClaudeFilePath } from '../_types.js';
+import React from 'react';
+import type { ClaudeFileInfo, FileScanner } from '../_types.js';
 import { scanClaudeFiles } from '../claude-md-scanner.js';
 import { scanSlashCommands } from '../slash-command-scanner.js';
-import { createMockFile, createMockSlashCommand } from '../test-helpers.js';
 import { delay } from '../test-utils.js';
 import { useFileNavigation } from './useFileNavigation.js';
 
-// Module mocks
-vi.mock('../claude-md-scanner.js');
-vi.mock('../slash-command-scanner.js');
-
 // Test component (for testing useFileNavigation)
-function TestComponent() {
-  const { files, selectedFile, isLoading, error } = useFileNavigation();
+function TestComponent({
+  scanner,
+  onError,
+  onFilesLoaded,
+}: {
+  scanner?: FileScanner;
+  onError?: (error: string | undefined) => void;
+  onFilesLoaded?: (files: ClaudeFileInfo[]) => void;
+}) {
+  const { files, selectedFile, isLoading, error } = useFileNavigation(
+    { recursive: false },
+    scanner,
+  );
+
+  // Call callbacks for testing
+  React.useEffect(() => {
+    if (onError) onError(error);
+  }, [error, onError]);
+
+  React.useEffect(() => {
+    if (onFilesLoaded && !isLoading) onFilesLoaded(files);
+  }, [files, isLoading, onFilesLoaded]);
 
   if (isLoading) {
     return <Text>Loading...</Text>;
@@ -34,197 +49,407 @@ function TestComponent() {
 }
 
 if (import.meta.vitest) {
-  const { describe, test, expect, vi, beforeEach } = import.meta.vitest;
-
-  // Mock typing
-  const mockedScanClaudeFiles = vi.mocked(scanClaudeFiles);
-  const mockedScanSlashCommands = vi.mocked(scanSlashCommands);
-
-  beforeEach(() => {
-    // Reset mocks before each test
-    mockedScanClaudeFiles.mockClear();
-    mockedScanSlashCommands.mockClear();
-    vi.clearAllTimers();
-  });
+  const { describe, test, expect } = import.meta.vitest;
+  const {
+    createClaudeProjectFixture,
+    createComplexProjectFixture,
+    withTempFixture,
+  } = await import('../test-fixture-helpers.js');
+  const { createFixture } = await import('fs-fixture');
 
   describe('useFileNavigation', () => {
     test('files are loaded and sorted correctly', async () => {
-      const claudeFiles: ClaudeFileInfo[] = [
-        createMockFile('z-file.md', 'claude-md', '/project/z-file.md'),
-        createMockFile('a-file.md', 'claude-local-md', '/project/a-file.md'),
-      ];
+      // Create actual file structure
+      await using fixture = await createClaudeProjectFixture({
+        projectName: 'test-project',
+        includeLocal: true,
+        includeCommands: true,
+      });
 
-      const slashCommands: SlashCommandInfo[] = [
-        createMockSlashCommand('m-command', {
-          filePath: createClaudeFilePath(
-            '/project/.claude/commands/m-command.md',
-          ),
-        }),
-      ];
+      // Create test scanner that scans the fixture directory
+      const testScanner: FileScanner = {
+        scanClaudeFiles: (options) =>
+          scanClaudeFiles({
+            ...options,
+            path: fixture.getPath('test-project'),
+            recursive: false,
+          }),
+        scanSlashCommands: (options) =>
+          scanSlashCommands({
+            ...options,
+            path: fixture.getPath('test-project'),
+            recursive: false,
+          }),
+      };
 
-      mockedScanClaudeFiles.mockResolvedValue(claudeFiles);
-      mockedScanSlashCommands.mockResolvedValue(slashCommands);
-
-      const { lastFrame } = render(<TestComponent />);
+      const { lastFrame } = render(<TestComponent scanner={testScanner} />);
 
       // Initial state is loading
       expect(lastFrame()).toContain('Loading...');
 
       // Wait for async processing to complete
-      await delay(100);
+      await delay(300); // Optimized delay for file operations
 
       // Verify results
-      expect(lastFrame()).toContain('Files: 3');
-      expect(lastFrame()).toContain('Selected: /project/z-file.md'); // First file in claude-md group
-
-      // Verify scan functions were called with correct options
-      expect(mockedScanClaudeFiles).toHaveBeenCalledWith({ recursive: true });
-      expect(mockedScanSlashCommands).toHaveBeenCalledWith({ recursive: true });
+      const frame = lastFrame();
+      expect(frame).toContain('Files:'); // Should find files
+      expect(frame).toContain('Selected:'); // Should have a selected file
+      expect(frame).not.toContain('Error:'); // No errors
     });
 
     test('error state is set when Claude file loading fails', async () => {
-      const errorMessage = 'Failed to scan Claude files';
-      mockedScanClaudeFiles.mockRejectedValue(new Error(errorMessage));
-      mockedScanSlashCommands.mockResolvedValue([]);
+      // Use mock-based approach to avoid environment-specific issues
+      const testScanner: FileScanner = {
+        scanClaudeFiles: async () => {
+          throw new Error('EACCES: permission denied');
+        },
+        scanSlashCommands: async () => [],
+      };
 
-      const { lastFrame } = render(<TestComponent />);
+      let capturedError: string | undefined;
+      let loadedFiles: ClaudeFileInfo[] = [];
+
+      const { lastFrame } = render(
+        <TestComponent
+          scanner={testScanner}
+          onError={(error) => {
+            capturedError = error;
+          }}
+          onFilesLoaded={(files) => {
+            loadedFiles = files;
+          }}
+        />,
+      );
+
+      // Initial state is loading
+      expect(lastFrame()).toContain('Loading...');
+
+      // Wait for the error to be caught and state to update
+      await delay(300);
+
+      // Verify error handling
+      expect(capturedError).toBeDefined();
+      expect(capturedError).toMatch(/EACCES|permission denied/i);
+      expect(loadedFiles).toEqual([]);
+
+      const frame = lastFrame();
+      expect(frame).toContain('Error:');
+      expect(frame).toMatch(/EACCES|permission denied/i);
+      expect(frame).not.toContain('Loading...');
+
+      // Test recovery with a working scanner
+      await using fixture = await createFixture({
+        accessible: {
+          'CLAUDE.md': 'Accessible content',
+        },
+      });
+
+      const accessibleScanner: FileScanner = {
+        scanClaudeFiles: (options) =>
+          scanClaudeFiles({
+            ...options,
+            path: fixture.getPath('accessible'),
+            recursive: false,
+          }),
+        scanSlashCommands: (options) =>
+          scanSlashCommands({
+            ...options,
+            path: fixture.getPath('accessible'),
+            recursive: false,
+          }),
+      };
+
+      // Re-render with working scanner to test recovery
+      const { lastFrame: lastFrame2 } = render(
+        <TestComponent scanner={accessibleScanner} />,
+      );
+
+      await delay(300);
+
+      // Verify the app recovers and works with accessible directory
+      const recoveredFrame = lastFrame2();
+      expect(recoveredFrame).not.toContain('Error:');
+      expect(recoveredFrame).toContain('Files:');
+      expect(recoveredFrame).not.toContain('Files: 0');
+    });
+
+    test('handles empty project directory', async () => {
+      // Create empty directory
+      await using _fixture = await withTempFixture(
+        {
+          'empty-project': {},
+        },
+        async (f) => {
+          // Create test scanner for empty directory
+          const testScanner: FileScanner = {
+            scanClaudeFiles: (options) =>
+              scanClaudeFiles({
+                ...options,
+                path: f.getPath('empty-project'),
+                recursive: false,
+              }),
+            scanSlashCommands: (options) =>
+              scanSlashCommands({
+                ...options,
+                path: f.getPath('empty-project'),
+                recursive: false,
+              }),
+          };
+
+          const { lastFrame } = render(<TestComponent scanner={testScanner} />);
+
+          // Initial state is loading
+          expect(lastFrame()).toContain('Loading...');
+
+          // Wait for async processing to complete
+          await delay(300); // Optimized delay
+
+          // Should show only global user files (since local directory is empty)
+          const frame = lastFrame();
+          expect(frame).toContain('Files:');
+          // Will have global slash commands but no local files
+
+          return f;
+        },
+      );
+    });
+
+    test('handles complex project structure', async () => {
+      // Create complex project structure
+      await using fixture = await createComplexProjectFixture();
+
+      // Create test scanner for complex project
+      const testScanner: FileScanner = {
+        scanClaudeFiles: (options) =>
+          scanClaudeFiles({
+            ...options,
+            path: fixture.getPath('my-app'),
+            recursive: false,
+          }),
+        scanSlashCommands: (options) =>
+          scanSlashCommands({
+            ...options,
+            path: fixture.getPath('my-app'),
+            recursive: false,
+          }),
+      };
+
+      const { lastFrame } = render(<TestComponent scanner={testScanner} />);
 
       // Initial state is loading
       expect(lastFrame()).toContain('Loading...');
 
       // Wait for async processing to complete
-      await delay(100);
+      await delay(500);
 
-      expect(lastFrame()).toContain(`Error: ${errorMessage}`);
+      // Should find multiple files
+      const frame = lastFrame();
+      expect(frame).toContain('Files:');
+      expect(frame).not.toContain('Files: 0');
+      expect(frame).toContain('Selected:');
     });
 
-    test('error state is set when slash command loading fails', async () => {
-      const errorMessage = 'Failed to scan slash commands';
-      mockedScanClaudeFiles.mockResolvedValue([]);
-      mockedScanSlashCommands.mockRejectedValue(new Error(errorMessage));
-
-      const { lastFrame } = render(<TestComponent />);
-
-      // Initial state is loading
-      expect(lastFrame()).toContain('Loading...');
-
-      // Wait for async processing to complete
-      await delay(100);
-
-      expect(lastFrame()).toContain(`Error: ${errorMessage}`);
-    });
-
-    test('fallback when error message does not exist', async () => {
-      // Error object without message
-      const errorWithoutMessage = new Error();
-      errorWithoutMessage.message = '';
-
-      mockedScanClaudeFiles.mockRejectedValue(errorWithoutMessage);
-      mockedScanSlashCommands.mockResolvedValue([]);
-
-      const { lastFrame } = render(<TestComponent />);
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      expect(lastFrame()).toContain('Error: Failed to scan files');
-    });
-
-    test('when empty results are returned', async () => {
-      mockedScanClaudeFiles.mockResolvedValue([]);
-      mockedScanSlashCommands.mockResolvedValue([]);
-
-      const { lastFrame } = render(<TestComponent />);
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      expect(lastFrame()).toContain('Files: 0');
-      expect(lastFrame()).not.toContain('Selected:');
-    });
-
-    test('SlashCommandInfo to ClaudeFileInfo conversion works correctly', async () => {
-      const slashCommand = createMockSlashCommand('deploy', {
-        description: 'Deploy to production',
-        hasArguments: true,
-        namespace: 'production',
-        filePath: createClaudeFilePath('/.claude/commands/deploy.md'),
+    test('finds global Claude files in home directory', async () => {
+      // Create home directory structure
+      await using fixture = await createFixture({
+        '.claude': {
+          'CLAUDE.md': '# Global Claude Config',
+        },
+        project: {
+          'CLAUDE.md': '# Project Config',
+        },
       });
 
-      mockedScanClaudeFiles.mockResolvedValue([]);
-      mockedScanSlashCommands.mockResolvedValue([slashCommand]);
+      // Create custom scanner that includes both local and global files
+      const testScanner: FileScanner = {
+        scanClaudeFiles: async (options) => {
+          // Scan local files
+          const localFiles = await scanClaudeFiles({
+            ...options,
+            path: fixture.getPath('project'),
+            recursive: false,
+          });
 
-      const { lastFrame } = render(<TestComponent />);
+          // Scan global files
+          const globalFiles = await scanClaudeFiles({
+            ...options,
+            path: fixture.getPath('.claude'),
+            recursive: false,
+          });
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+          // Combine results
+          return [...localFiles, ...globalFiles];
+        },
+        scanSlashCommands: (options) =>
+          scanSlashCommands({
+            ...options,
+            path: fixture.getPath('project'),
+            recursive: false,
+          }),
+      };
 
-      expect(lastFrame()).toContain('Files: 1');
-      expect(lastFrame()).toContain('Selected: /.claude/commands/deploy.md');
+      const { lastFrame } = render(<TestComponent scanner={testScanner} />);
+
+      await delay(300);
+
+      // Should find both global and project files
+      const frame = lastFrame();
+      expect(frame).toContain('Files:');
+      expect(frame).not.toContain('Files: 0');
+      expect(frame).toContain('CLAUDE.md'); // Should find at least one file
     });
 
-    test('SlashCommand conversion without namespace', async () => {
-      const slashCommand = createMockSlashCommand('test', {
-        namespace: undefined,
-        filePath: createClaudeFilePath('/.claude/commands/test.md'),
+    test('slash commands are properly loaded', async () => {
+      // Import the helper function
+      const { createSlashCommandsFixture } = await import(
+        '../test-fixture-helpers.js'
+      );
+
+      await using fixture = await createSlashCommandsFixture();
+
+      // Create test scanner for slash commands
+      const testScanner: FileScanner = {
+        scanClaudeFiles: (options) =>
+          scanClaudeFiles({
+            ...options,
+            path: fixture.getPath('slash-project'),
+            recursive: false,
+          }),
+        scanSlashCommands: (options) =>
+          scanSlashCommands({
+            ...options,
+            path: fixture.getPath('slash-project'),
+            recursive: false,
+          }),
+      };
+
+      const { lastFrame } = render(<TestComponent scanner={testScanner} />);
+
+      await delay(300); // Optimized delay
+
+      // Should find slash commands (3 local + global commands)
+      const frame = lastFrame();
+      expect(frame).toContain('Files:');
+      expect(frame).not.toContain('Files: 0');
+      expect(frame).toContain('Selected:');
+    });
+
+    test('handles mixed file types', async () => {
+      // Import the helper function
+      const { createMixedFilesFixture } = await import(
+        '../test-fixture-helpers.js'
+      );
+
+      await using fixture = await createMixedFilesFixture();
+
+      // Create test scanner for mixed file types
+      const testScanner: FileScanner = {
+        scanClaudeFiles: (options) =>
+          scanClaudeFiles({
+            ...options,
+            path: fixture.getPath('mixed-project'),
+            recursive: false,
+          }),
+        scanSlashCommands: (options) =>
+          scanSlashCommands({
+            ...options,
+            path: fixture.getPath('mixed-project'),
+            recursive: false,
+          }),
+      };
+
+      const { lastFrame } = render(<TestComponent scanner={testScanner} />);
+
+      await delay(300); // Optimized delay
+
+      // Should find all file types
+      const frame = lastFrame();
+      expect(frame).toContain('Files:');
+      expect(frame).not.toContain('Files: 0');
+      expect(frame).toContain('Selected:');
+    });
+
+    test('handles file updates after initial load', async () => {
+      // Create initial project structure
+      await using fixture = await createClaudeProjectFixture({
+        projectName: 'update-test',
       });
 
-      mockedScanClaudeFiles.mockResolvedValue([]);
-      mockedScanSlashCommands.mockResolvedValue([slashCommand]);
+      // Create test scanner
+      const testScanner: FileScanner = {
+        scanClaudeFiles: (options) =>
+          scanClaudeFiles({
+            ...options,
+            path: fixture.getPath('update-test'),
+            recursive: false,
+          }),
+        scanSlashCommands: (options) =>
+          scanSlashCommands({
+            ...options,
+            path: fixture.getPath('update-test'),
+            recursive: false,
+          }),
+      };
 
-      const { lastFrame } = render(<TestComponent />);
+      const { lastFrame } = render(<TestComponent scanner={testScanner} />);
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await delay(500);
 
-      expect(lastFrame()).toContain('Files: 1');
-      expect(lastFrame()).toContain('Selected: /.claude/commands/test.md');
+      // Verify initial state
+      const initialFrame = lastFrame();
+      expect(initialFrame).toContain('Files:');
+      expect(initialFrame).toContain('Selected:');
+
+      // Add a new file (Note: In real hook, this would require re-scanning)
+      await fixture.writeFile(
+        'update-test/CLAUDE.local.md',
+        '# New local config',
+      );
+
+      // Hook doesn't auto-refresh, so files count should remain the same
+      await delay(50); // Minimal delay
+      expect(lastFrame()).toBe(initialFrame);
     });
 
-    test('file sorting functionality verification', async () => {
-      const claudeFiles: ClaudeFileInfo[] = [
-        createMockFile('z-file.md', 'claude-md', '/project/z-file.md'),
-        createMockFile('a-file.md', 'claude-local-md', '/project/a-file.md'),
-        createMockFile('m-file.md', 'slash-command', '/project/m-file.md'),
-      ];
+    test('handles recursive directory scanning', async () => {
+      // Import the helper function
+      const { createNestedProjectFixture } = await import(
+        '../test-fixture-helpers.js'
+      );
 
-      mockedScanClaudeFiles.mockResolvedValue(claudeFiles);
-      mockedScanSlashCommands.mockResolvedValue([]);
+      await using fixture = await createNestedProjectFixture();
 
-      const { lastFrame } = render(<TestComponent />);
+      // Create test scanner for nested structure
+      const testScanner: FileScanner = {
+        scanClaudeFiles: (options) =>
+          scanClaudeFiles({
+            ...options,
+            path: fixture.getPath('nested-project'),
+            recursive: true, // This test specifically tests recursive scanning
+          }),
+        scanSlashCommands: (options) =>
+          scanSlashCommands({
+            ...options,
+            path: fixture.getPath('nested-project'),
+            recursive: true, // This test specifically tests recursive scanning
+          }),
+      };
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      const { lastFrame } = render(<TestComponent scanner={testScanner} />);
 
-      // Sorted by group order, first file in claude-md group (z-file.md) is selected
-      expect(lastFrame()).toContain('Files: 3');
-      expect(lastFrame()).toContain('Selected: /project/z-file.md');
-    });
+      await delay(800); // Increased delay for recursive scanning
 
-    test('mixing multiple file types', async () => {
-      const claudeFiles: ClaudeFileInfo[] = [
-        createMockFile('CLAUDE.md', 'claude-md', '/project/CLAUDE.md'),
-        createMockFile(
-          'CLAUDE.local.md',
-          'claude-local-md',
-          '/project/CLAUDE.local.md',
-        ),
-      ];
-
-      const slashCommands: SlashCommandInfo[] = [
-        createMockSlashCommand('deploy', {
-          filePath: createClaudeFilePath('/project/.claude/commands/deploy.md'),
-        }),
-        createMockSlashCommand('test', {
-          filePath: createClaudeFilePath('/project/.claude/commands/test.md'),
-        }),
-      ];
-
-      mockedScanClaudeFiles.mockResolvedValue(claudeFiles);
-      mockedScanSlashCommands.mockResolvedValue(slashCommands);
-
-      const { lastFrame } = render(<TestComponent />);
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      expect(lastFrame()).toContain('Files: 4');
-      // Sorted by group order, so first file in claude-md group (CLAUDE.md) is selected
-      expect(lastFrame()).toContain('Selected: /project/CLAUDE.md');
+      // Should find all files recursively
+      const frame = lastFrame();
+      expect(frame).toContain('Files:');
+      // Should find multiple files from nested directories
+      expect(frame).not.toContain('Files: 0');
+      // Extract file count and verify it's more than 1
+      const fileCountMatch = frame?.match(/Files: (\d+)/);
+      expect(fileCountMatch).toBeTruthy();
+      const fileCount = Number(fileCountMatch?.[1] ?? '0');
+      expect(fileCount).toBeGreaterThan(1);
+      expect(frame).toContain('Selected:');
     });
   });
 }

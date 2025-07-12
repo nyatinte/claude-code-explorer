@@ -1,6 +1,11 @@
+import { join } from 'node:path';
 import { render } from 'ink-testing-library';
 import type { ClaudeFileInfo, FileGroup } from '../../_types.js';
-import { createMockFile, mockFilePresets } from '../../test-helpers.js';
+import { createClaudeFilePath } from '../../_types.js';
+import {
+  createComplexProjectFixture,
+  withTempFixture,
+} from '../../test-fixture-helpers.js';
 import { waitForEffects } from '../../test-utils.js';
 import { FileList } from './FileList.js';
 
@@ -14,6 +19,20 @@ if (import.meta.vitest) {
     beforeEach(() => {
       onFileSelect = vi.fn();
       onToggleGroup = vi.fn();
+    });
+
+    // Helper function: Create ClaudeFileInfo from file path and type
+    const createFileInfo = (
+      basePath: string,
+      relativePath: string,
+      type: ClaudeFileInfo['type'],
+    ): ClaudeFileInfo => ({
+      path: createClaudeFilePath(join(basePath, relativePath)),
+      type,
+      size: 1024,
+      lastModified: new Date('2024-01-01'),
+      commands: [],
+      tags: [],
     });
 
     // Helper function: Create groups from files
@@ -37,22 +56,36 @@ if (import.meta.vitest) {
     };
 
     describe('Basic display and rendering', () => {
-      test('basic file list display', () => {
-        const files = mockFilePresets.basic();
-        const fileGroups = createFileGroups(files);
+      test('basic file list display', async () => {
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# CLAUDE.md\n\nTest project',
+              'CLAUDE.local.md': '# CLAUDE.local.md\n\nLocal config',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files: ClaudeFileInfo[] = [
+              createFileInfo(basePath, 'CLAUDE.md', 'claude-md'),
+              createFileInfo(basePath, 'CLAUDE.local.md', 'claude-local-md'),
+            ];
+            const fileGroups = createFileGroups(files);
 
-        const { lastFrame } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-          />,
+            const { lastFrame } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+              />,
+            );
+
+            expect(lastFrame()).toContain('Claude Files (2)');
+            expect(lastFrame()).toContain('CLAUDE.md');
+            expect(lastFrame()).toContain('CLAUDE.local.md');
+          },
         );
-
-        expect(lastFrame()).toContain('Claude Files (2)');
-        expect(lastFrame()).toContain('CLAUDE.md');
-        expect(lastFrame()).toContain('CLAUDE.local.md');
       });
 
       test('empty file list display', () => {
@@ -68,438 +101,624 @@ if (import.meta.vitest) {
         expect(lastFrame()).toContain('Claude Files (0)');
       });
 
-      test('search placeholder display', () => {
-        const files = [createMockFile('CLAUDE.md', 'claude-md')];
-        const fileGroups = createFileGroups(files);
+      test('search placeholder display', async () => {
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# CLAUDE.md',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [createFileInfo(basePath, 'CLAUDE.md', 'claude-md')];
+            const fileGroups = createFileGroups(files);
 
-        const { lastFrame } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-          />,
+            const { lastFrame } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+              />,
+            );
+
+            expect(lastFrame()).toContain('Type to search...');
+          },
         );
-
-        expect(lastFrame()).toContain('Type to search...');
       });
 
-      test('keyboard navigation info display', () => {
-        const files = [createMockFile('CLAUDE.md', 'claude-md')];
-        const fileGroups = createFileGroups(files);
+      test('keyboard navigation info display', async () => {
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# CLAUDE.md',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [createFileInfo(basePath, 'CLAUDE.md', 'claude-md')];
+            const fileGroups = createFileGroups(files);
 
-        const { lastFrame } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-          />,
+            const { lastFrame } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+              />,
+            );
+
+            expect(lastFrame()).toContain('↑↓: Navigate');
+            expect(lastFrame()).toContain('Enter/Space: Select');
+            expect(lastFrame()).toContain('Type to search');
+            expect(lastFrame()).toContain('Esc: Clear/Exit');
+          },
         );
-
-        expect(lastFrame()).toContain('↑↓: Navigate');
-        expect(lastFrame()).toContain('Enter/Space: Select');
-        expect(lastFrame()).toContain('Type to search');
-        expect(lastFrame()).toContain('Esc: Clear/Exit');
       });
     });
 
     describe('File icons and badges', () => {
-      test('icons and badges display for each file type', () => {
-        const files = [
-          createMockFile('/test/CLAUDE.md', 'claude-md'),
-          createMockFile('/test/CLAUDE.local.md', 'claude-local-md'),
-          createMockFile('/test/commands/test.md', 'slash-command'),
-          createMockFile('/home/.claude/CLAUDE.md', 'global-md'),
-        ];
-        const fileGroups = createFileGroups(files);
+      test('icons and badges display for each file type', async () => {
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# CLAUDE.md',
+              'CLAUDE.local.md': '# CLAUDE.local.md',
+              '.claude': {
+                commands: {
+                  'test.md': '# /test\n\nTest command',
+                },
+              },
+            },
+            '.claude': {
+              'CLAUDE.md': '# Global CLAUDE.md',
+            },
+          },
+          async (fixture) => {
+            const files: ClaudeFileInfo[] = [
+              createFileInfo(
+                fixture.path,
+                'test-project/CLAUDE.md',
+                'claude-md',
+              ),
+              createFileInfo(
+                fixture.path,
+                'test-project/CLAUDE.local.md',
+                'claude-local-md',
+              ),
+              createFileInfo(
+                fixture.path,
+                'test-project/.claude/commands/test.md',
+                'slash-command',
+              ),
+              createFileInfo(fixture.path, '.claude/CLAUDE.md', 'global-md'),
+            ];
+            const fileGroups = createFileGroups(files);
 
-        const { lastFrame } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-          />,
+            const { lastFrame } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+              />,
+            );
+
+            const frame = lastFrame();
+            // Icons
+            expect(frame).toContain('📝'); // claude-md
+            expect(frame).toContain('🔒'); // claude-local-md
+            expect(frame).toContain('⚡'); // slash-command
+            expect(frame).toContain('🌐'); // global-md
+
+            // Badges
+            expect(frame).toContain('PROJECT');
+            expect(frame).toContain('LOCAL');
+            expect(frame).toContain('COMMAND');
+            expect(frame).toContain('GLOBAL');
+          },
         );
-
-        const frame = lastFrame();
-        // Icons
-        expect(frame).toContain('📝'); // claude-md
-        expect(frame).toContain('🔒'); // claude-local-md
-        expect(frame).toContain('⚡'); // slash-command
-        expect(frame).toContain('🌐'); // global-md
-
-        // Badges
-        expect(frame).toContain('PROJECT');
-        expect(frame).toContain('LOCAL');
-        expect(frame).toContain('COMMAND');
-        expect(frame).toContain('GLOBAL');
       });
     });
 
     describe('Selection state display', () => {
-      test('highlight display for selected file', () => {
-        const files = [
-          createMockFile('file1.md', 'claude-md'),
-          createMockFile('file2.md', 'claude-md'),
-        ];
-        const fileGroups = createFileGroups(files);
+      test('highlight display for selected file', async () => {
+        await withTempFixture(
+          {
+            project: {
+              'CLAUDE.md': '# File 1',
+              'README.md': '# File 2',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'project');
+            const files = [
+              createFileInfo(basePath, 'CLAUDE.md', 'claude-md'),
+              createFileInfo(basePath, 'README.md', 'claude-md'),
+            ];
+            const fileGroups = createFileGroups(files);
 
-        const { lastFrame } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-            selectedFile={files[0]}
-          />,
+            const { lastFrame } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+                selectedFile={files[0]}
+              />,
+            );
+
+            // selectedFile is passed as a prop, but internal selection state is updated via useEffect
+            // Focus indicator may not be displayed in tests
+            const frame = lastFrame();
+            // Verify at least the first file is displayed
+            expect(frame).toContain('CLAUDE.md');
+            expect(frame).toContain('📝'); // PROJECT icon
+          },
         );
-
-        // selectedFile is passed as a prop, but internal selection state is updated via useEffect
-        // Focus indicator may not be displayed in tests
-        const frame = lastFrame();
-        // Verify at least the first file is displayed
-        expect(frame).toContain('file1.md');
-        expect(frame).toContain('📝'); // PROJECT icon
       });
     });
 
     describe('Search filtering', () => {
       test('filters files by search query', async () => {
-        const files = [
-          createMockFile('/test/CLAUDE.md', 'claude-md'),
-          createMockFile('/test/CLAUDE.local.md', 'claude-local-md'),
-          createMockFile('/test/README.md', 'claude-md'),
-        ];
-        const fileGroups = createFileGroups(files);
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# Project config',
+              'CLAUDE.local.md': '# Local config',
+              'README.md': '# README',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [
+              createFileInfo(basePath, 'CLAUDE.md', 'claude-md'),
+              createFileInfo(basePath, 'CLAUDE.local.md', 'claude-local-md'),
+              createFileInfo(basePath, 'README.md', 'claude-md'),
+            ];
+            const fileGroups = createFileGroups(files);
 
-        // Render with search query
-        const { lastFrame } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-            initialSearchQuery="local"
-          />,
+            // Render with search query
+            const { lastFrame } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+                initialSearchQuery="local"
+              />,
+            );
+
+            // Verify results
+            const frame = lastFrame();
+            expect(frame).toContain('CLAUDE.local.md');
+            // README.md should be filtered out
+            expect(frame).not.toContain('README');
+            // Only LOCAL group should remain
+            expect(frame).toContain('Claude Files (1)');
+          },
         );
-
-        // Verify results
-        const frame = lastFrame();
-        expect(frame).toContain('test/CLAUDE.local.md'); // Shows with parent directory
-        // README.md should be filtered out
-        expect(frame).not.toContain('README');
-        // Only LOCAL group should remain
-        expect(frame).toContain('Claude Files (1)');
       });
 
       test('shows empty search results', async () => {
-        const files = [createMockFile('/test/CLAUDE.md', 'claude-md')];
-        const fileGroups = createFileGroups(files);
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# CLAUDE.md',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [createFileInfo(basePath, 'CLAUDE.md', 'claude-md')];
+            const fileGroups = createFileGroups(files);
 
-        // Search with non-existent string
-        const { lastFrame } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-            initialSearchQuery="nonexistent"
-          />,
+            // Search with non-existent string
+            const { lastFrame } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+                initialSearchQuery="nonexistent"
+              />,
+            );
+
+            // Should show 0 files when no matches
+            const frame = lastFrame();
+            expect(frame).toContain('Claude Files (0)');
+            // No files should be visible
+            expect(frame).not.toContain('CLAUDE.md');
+          },
         );
-
-        // Should show 0 files when no matches
-        const frame = lastFrame();
-        expect(frame).toContain('Claude Files (0)');
-        // No files should be visible
-        expect(frame).not.toContain('CLAUDE.md');
       });
 
       test('filters files when initialSearchQuery is provided', async () => {
-        const files = [
-          createMockFile('/test/CLAUDE.md', 'claude-md'),
-          createMockFile('/test/CLAUDE.local.md', 'claude-local-md'),
-          createMockFile('/test/README.md', 'claude-md'),
-        ];
-        const fileGroups = createFileGroups(files);
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# CLAUDE.md',
+              'CLAUDE.local.md': '# CLAUDE.local.md',
+              'README.md': '# README',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [
+              createFileInfo(basePath, 'CLAUDE.md', 'claude-md'),
+              createFileInfo(basePath, 'CLAUDE.local.md', 'claude-local-md'),
+              createFileInfo(basePath, 'README.md', 'claude-md'),
+            ];
+            const fileGroups = createFileGroups(files);
 
-        const { lastFrame } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-            initialSearchQuery="local"
-          />,
+            const { lastFrame } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+                initialSearchQuery="local"
+              />,
+            );
+
+            await waitForEffects();
+
+            // Verify search is active and filtering works
+            const frame = lastFrame();
+            expect(frame).toContain('Search: local');
+            expect(frame).toContain('CLAUDE.local.md');
+            expect(frame).not.toContain('README');
+            expect(frame).toContain('Claude Files (1)'); // Only 1 file matches
+          },
         );
-
-        await waitForEffects();
-
-        // Verify search is active and filtering works
-        const frame = lastFrame();
-        expect(frame).toContain('Search: local');
-        expect(frame).toContain('test/CLAUDE.local.md');
-        expect(frame).not.toContain('README');
-        expect(frame).toContain('Claude Files (1)'); // Only 1 file matches
       });
 
       test('initialSearchQuery sets the initial search state', async () => {
-        const files = [
-          createMockFile('/test/CLAUDE.md', 'claude-md'),
-          createMockFile('/test/README.md', 'claude-md'),
-        ];
-        const fileGroups = createFileGroups(files);
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# CLAUDE.md',
+              'README.md': '# README',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [
+              createFileInfo(basePath, 'CLAUDE.md', 'claude-md'),
+              createFileInfo(basePath, 'README.md', 'claude-md'),
+            ];
+            const fileGroups = createFileGroups(files);
 
-        // First render with search query
-        const { lastFrame } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-            initialSearchQuery="README"
-          />,
+            // First render with search query
+            const { lastFrame } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+                initialSearchQuery="README"
+              />,
+            );
+
+            await waitForEffects();
+
+            // Verify initial search is active
+            expect(lastFrame()).toContain('Search: README');
+            expect(lastFrame()).toContain('README.md');
+            expect(lastFrame()).not.toContain('CLAUDE.md');
+
+            // Second render without search query (fresh instance)
+            const { lastFrame: lastFrame2 } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+                initialSearchQuery=""
+              />,
+            );
+
+            await waitForEffects();
+
+            // New instance should show no search
+            expect(lastFrame2()).toContain('Type to search...');
+            expect(lastFrame2()).toContain('CLAUDE.md');
+            expect(lastFrame2()).toContain('README.md');
+          },
         );
-
-        await waitForEffects();
-
-        // Verify initial search is active
-        expect(lastFrame()).toContain('Search: README');
-        expect(lastFrame()).toContain('README.md');
-        expect(lastFrame()).not.toContain('CLAUDE.md');
-
-        // Second render without search query (fresh instance)
-        const { lastFrame: lastFrame2 } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-            initialSearchQuery=""
-          />,
-        );
-
-        await waitForEffects();
-
-        // New instance should show no search
-        expect(lastFrame2()).toContain('Type to search...');
-        expect(lastFrame2()).toContain('CLAUDE.md');
-        expect(lastFrame2()).toContain('README.md');
       });
 
-      test('onSearchQueryChange callback is called when provided', () => {
-        const files = [createMockFile('/test/file.md', 'claude-md')];
-        const fileGroups = createFileGroups(files);
-        const onSearchQueryChange = vi.fn();
+      test('onSearchQueryChange callback is called when provided', async () => {
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# CLAUDE.md',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [createFileInfo(basePath, 'CLAUDE.md', 'claude-md')];
+            const fileGroups = createFileGroups(files);
+            const onSearchQueryChange = vi.fn();
 
-        const { rerender } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-            onSearchQueryChange={onSearchQueryChange}
-          />,
+            const { rerender } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+                onSearchQueryChange={onSearchQueryChange}
+              />,
+            );
+
+            // The callback should be available for the component to use
+            expect(onSearchQueryChange).toBeDefined();
+
+            // Re-render with a search query to verify the component can handle it
+            rerender(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+                initialSearchQuery="test"
+                onSearchQueryChange={onSearchQueryChange}
+              />,
+            );
+
+            // The component should render with the search query
+            expect(
+              render(
+                <FileList
+                  files={files}
+                  fileGroups={fileGroups}
+                  onFileSelect={onFileSelect}
+                  onToggleGroup={onToggleGroup}
+                  initialSearchQuery="test"
+                />,
+              ).lastFrame(),
+            ).toContain('Search: test');
+          },
         );
-
-        // The callback should be available for the component to use
-        expect(onSearchQueryChange).toBeDefined();
-
-        // Re-render with a search query to verify the component can handle it
-        rerender(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-            initialSearchQuery="test"
-            onSearchQueryChange={onSearchQueryChange}
-          />,
-        );
-
-        // The component should render with the search query
-        expect(
-          render(
-            <FileList
-              files={files}
-              fileGroups={fileGroups}
-              onFileSelect={onFileSelect}
-              onToggleGroup={onToggleGroup}
-              initialSearchQuery="test"
-            />,
-          ).lastFrame(),
-        ).toContain('Search: test');
       });
     });
 
     describe('Keyboard navigation', () => {
       test('onFileSelect is called when navigating between files', async () => {
-        const files = [
-          createMockFile('file1.md', 'claude-md'),
-          createMockFile('file2.md', 'claude-md'),
-          createMockFile('file3.md', 'claude-md'),
-        ];
-        const fileGroups = createFileGroups(files);
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# File 1',
+              'CLAUDE.local.md': '# File 2',
+              'README.md': '# File 3',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [
+              createFileInfo(basePath, 'CLAUDE.md', 'claude-md'),
+              createFileInfo(basePath, 'CLAUDE.local.md', 'claude-local-md'),
+              createFileInfo(basePath, 'README.md', 'claude-md'),
+            ];
+            const fileGroups = createFileGroups(files);
 
-        render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-          />,
+            render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+              />,
+            );
+
+            await waitForEffects();
+
+            // Since groups are expanded by default and the component auto-selects the first file,
+            // onFileSelect should have been called with the first file
+            expect(onFileSelect).toHaveBeenCalledWith(files[0]);
+
+            // Verify that onFileSelect is a proper callback
+            expect(typeof onFileSelect).toBe('function');
+            expect(onFileSelect).toHaveBeenCalledTimes(1);
+          },
         );
-
-        await waitForEffects();
-
-        // Since groups are expanded by default and the component auto-selects the first file,
-        // onFileSelect should have been called with the first file
-        expect(onFileSelect).toHaveBeenCalledWith(files[0]);
-
-        // Verify that onFileSelect is a proper callback
-        expect(typeof onFileSelect).toBe('function');
-        expect(onFileSelect).toHaveBeenCalledTimes(1);
       });
 
-      test('exit behavior when Escape key is pressed', () => {
+      test('exit behavior when Escape key is pressed', async () => {
         // Testing process.exit in React Ink is complex because it terminates the process
         // Instead, we verify that the component is properly configured to handle Escape key
-        const files = [createMockFile('file1.md', 'claude-md')];
-        const fileGroups = createFileGroups(files);
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# CLAUDE.md',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [createFileInfo(basePath, 'CLAUDE.md', 'claude-md')];
+            const fileGroups = createFileGroups(files);
 
-        const { lastFrame } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-          />,
+            const { lastFrame } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+              />,
+            );
+
+            // Verify that the escape instruction is shown to the user
+            expect(lastFrame()).toContain('Esc: Clear/Exit');
+
+            // The actual exit behavior is handled by the useInput hook
+            // which calls process.exit(0) when Escape is pressed with no search query
+            // We trust that React Ink's useInput properly handles the key press
+          },
         );
-
-        // Verify that the escape instruction is shown to the user
-        expect(lastFrame()).toContain('Esc: Clear/Exit');
-
-        // The actual exit behavior is handled by the useInput hook
-        // which calls process.exit(0) when Escape is pressed with no search query
-        // We trust that React Ink's useInput properly handles the key press
       });
     });
 
     describe('Edge cases for file selection', () => {
-      test('pressing up arrow on first file', () => {
-        const files = [
-          createMockFile('file1.md', 'claude-md'),
-          createMockFile('file2.md', 'claude-md'),
-        ];
-        const fileGroups = createFileGroups(files);
+      test('pressing up arrow on first file', async () => {
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# File 1',
+              'README.md': '# File 2',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [
+              createFileInfo(basePath, 'CLAUDE.md', 'claude-md'),
+              createFileInfo(basePath, 'README.md', 'claude-md'),
+            ];
+            const fileGroups = createFileGroups(files);
 
-        const { stdin } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-          />,
+            const { stdin } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+              />,
+            );
+
+            // Press up arrow while first file is selected
+            stdin.write('\x1B[A'); // ↑
+
+            // Should still have first file selected
+            expect(onFileSelect).toHaveBeenLastCalledWith(files[0]);
+          },
         );
-
-        // Press up arrow while first file is selected
-        stdin.write('\x1B[A'); // ↑
-
-        // Should still have first file selected
-        expect(onFileSelect).toHaveBeenLastCalledWith(files[0]);
       });
 
       test('last file is selected when there are multiple files', async () => {
-        const files = [
-          createMockFile('file1.md', 'claude-md'),
-          createMockFile('file2.md', 'claude-md'),
-        ];
-        const fileGroups = createFileGroups(files);
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# File 1',
+              'README.md': '# File 2',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [
+              createFileInfo(basePath, 'CLAUDE.md', 'claude-md'),
+              createFileInfo(basePath, 'README.md', 'claude-md'),
+            ];
+            const fileGroups = createFileGroups(files);
 
-        render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-            selectedFile={files[1]} // Select the last file
-          />,
+            render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+                selectedFile={files[1]} // Select the last file
+              />,
+            );
+
+            await waitForEffects();
+
+            // The component should respect the selectedFile prop
+            // Since we can't reliably test keyboard navigation in the test environment,
+            // we verify that the component can handle being initialized with the last file selected
+            expect(files[1]).toBeDefined();
+            expect(files[1]?.path).toBe(
+              createClaudeFilePath(join(basePath, 'README.md')),
+            );
+          },
         );
-
-        await waitForEffects();
-
-        // The component should respect the selectedFile prop
-        // Since we can't reliably test keyboard navigation in the test environment,
-        // we verify that the component can handle being initialized with the last file selected
-        expect(files[1]).toBeDefined();
-        expect(files[1]?.path).toBe('/test/file2.md');
       });
     });
 
     describe('Navigation during search', () => {
       test('navigate filtered search results', async () => {
-        const files = [
-          createMockFile('/test/CLAUDE.md', 'claude-md'),
-          createMockFile('/test/CLAUDE.local.md', 'claude-local-md'),
-          createMockFile('/test/README.md', 'claude-md'),
-        ];
-        const fileGroups = createFileGroups(files);
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# CLAUDE.md',
+              'CLAUDE.local.md': '# CLAUDE.local.md',
+              'README.md': '# README',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [
+              createFileInfo(basePath, 'CLAUDE.md', 'claude-md'),
+              createFileInfo(basePath, 'CLAUDE.local.md', 'claude-local-md'),
+              createFileInfo(basePath, 'README.md', 'claude-md'),
+            ];
+            const fileGroups = createFileGroups(files);
 
-        const { stdin } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-          />,
+            const { stdin } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+              />,
+            );
+
+            // Wait for initialization
+            await waitForEffects();
+
+            // Type search query directly (always-on search)
+            stdin.write('CLAUDE');
+            await waitForEffects();
+
+            // Navigate through filtered results
+            // First group (claude-md) is selected
+            // Expand group
+            stdin.write('\r');
+            await waitForEffects();
+
+            // From group to first file
+            stdin.write('\x1B[B'); // ↓
+            await waitForEffects();
+
+            expect(onFileSelect).toHaveBeenCalledWith(files[0]); // CLAUDE.md
+          },
         );
-
-        // Wait for initialization
-        await waitForEffects();
-
-        // Type search query directly (always-on search)
-        stdin.write('CLAUDE');
-        await waitForEffects();
-
-        // Navigate through filtered results
-        // First group (claude-md) is selected
-        // Expand group
-        stdin.write('\r');
-        await waitForEffects();
-
-        // From group to first file
-        stdin.write('\x1B[B'); // ↓
-        await waitForEffects();
-
-        expect(onFileSelect).toHaveBeenCalledWith(files[0]); // CLAUDE.md
       });
 
-      test('index reset when search query changes', () => {
-        const files = [
-          createMockFile('file1.md', 'claude-md'),
-          createMockFile('file2.md', 'claude-md'),
-          createMockFile('file3.md', 'claude-md'),
-        ];
-        const fileGroups = createFileGroups(files);
+      test('index reset when search query changes', async () => {
+        await withTempFixture(
+          {
+            'test-project': {
+              'CLAUDE.md': '# File 1',
+              'README.md': '# File 2',
+              'NOTES.md': '# File 3',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [
+              createFileInfo(basePath, 'CLAUDE.md', 'claude-md'),
+              createFileInfo(basePath, 'README.md', 'claude-md'),
+              createFileInfo(basePath, 'NOTES.md', 'claude-md'),
+            ];
+            const fileGroups = createFileGroups(files);
 
-        const { stdin } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-          />,
+            const { stdin } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+              />,
+            );
+
+            // Move to second file
+            stdin.write('\x1B[B'); // ↓
+
+            // Type search query directly (always-on search)
+            stdin.write('CLAUDE');
+
+            // Index is reset, first file is selected
+            expect(onFileSelect).toHaveBeenLastCalledWith(files[0]);
+          },
         );
-
-        // Move to second file
-        stdin.write('\x1B[B'); // ↓
-
-        // Type search query directly (always-on search)
-        stdin.write('file');
-
-        // Index is reset, first file is selected
-        expect(onFileSelect).toHaveBeenLastCalledWith(files[0]);
       });
     });
 
@@ -508,7 +727,7 @@ if (import.meta.vitest) {
         // Skipped: ink-testing-library doesn't support useFocus hook properly
         // See: https://github.com/vadimdemedes/ink/issues/515
         // Menu mode requires focus management which doesn't work in test environment
-        const files = [createMockFile('file1.md', 'claude-md')];
+        const files = [createFileInfo('', 'file1.md', 'claude-md')];
         const fileGroups = createFileGroups(files);
 
         const { stdin, lastFrame } = render(
@@ -544,55 +763,73 @@ if (import.meta.vitest) {
 
     describe('Complex scenarios', () => {
       test('search, navigate, and open menu flow', async () => {
-        const files = [
-          createMockFile('/project1/CLAUDE.md', 'claude-md'),
-          createMockFile('/project2/CLAUDE.md', 'claude-md'),
-          createMockFile('/test/README.md', 'claude-md'),
-        ];
-        const fileGroups = createFileGroups(files);
+        await withTempFixture(
+          {
+            project1: {
+              'CLAUDE.md': '# Project 1',
+            },
+            project2: {
+              'CLAUDE.md': '# Project 2',
+            },
+            test: {
+              'README.md': '# README',
+            },
+          },
+          async (fixture) => {
+            const files = [
+              createFileInfo(fixture.path, 'project1/CLAUDE.md', 'claude-md'),
+              createFileInfo(fixture.path, 'project2/CLAUDE.md', 'claude-md'),
+              createFileInfo(fixture.path, 'test/README.md', 'claude-md'),
+            ];
+            const fileGroups = createFileGroups(files);
 
-        const { stdin, lastFrame } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-          />,
+            const { stdin, lastFrame } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+              />,
+            );
+
+            // Wait for initialization
+            await waitForEffects();
+
+            // Type search query directly
+            stdin.write('CLAUDE');
+            await waitForEffects();
+
+            // Expand group
+            stdin.write('\r');
+            await waitForEffects();
+
+            // From group to first file
+            stdin.write('\x1B[B'); // ↓
+            await waitForEffects();
+
+            // Move to second result
+            stdin.write('\x1B[B'); // ↓
+            await waitForEffects();
+
+            // Open menu
+            stdin.write('\r');
+            await waitForEffects();
+
+            // Verify menu is displayed
+            expect(lastFrame()).toContain('Actions');
+            expect(lastFrame()).toContain('Copy');
+          },
         );
-
-        // Wait for initialization
-        await waitForEffects();
-
-        // Type search query directly
-        stdin.write('CLAUDE');
-        await waitForEffects();
-
-        // Expand group
-        stdin.write('\r');
-        await waitForEffects();
-
-        // From group to first file
-        stdin.write('\x1B[B'); // ↓
-        await waitForEffects();
-
-        // Move to second result
-        stdin.write('\x1B[B'); // ↓
-        await waitForEffects();
-
-        // Open menu
-        stdin.write('\r');
-        await waitForEffects();
-
-        // Verify menu is displayed
-        expect(lastFrame()).toContain('Actions');
-        expect(lastFrame()).toContain('Copy');
       });
     });
 
     describe('Performance and memoization', () => {
       test('prevent re-render with same search query', async () => {
+        await using fixture = await createComplexProjectFixture();
+
+        // Create many files to test performance
         const files = Array.from({ length: 100 }, (_, i) =>
-          createMockFile(`file${i}.md`, 'claude-md'),
+          createFileInfo(fixture.path, `my-app/src/file${i}.md`, 'claude-md'),
         );
         const fileGroups = createFileGroups(files);
 
@@ -628,45 +865,83 @@ if (import.meta.vitest) {
     });
 
     describe('Edge cases', () => {
-      test('display files with special characters', () => {
-        const files = [
-          createMockFile('/test/[special].md', 'claude-md'),
-          createMockFile('/test/file with spaces.md', 'claude-md'),
-          createMockFile('/test/日本語.md', 'claude-md'),
-        ];
-        const fileGroups = createFileGroups(files);
+      test('display files with special characters', async () => {
+        await withTempFixture(
+          {
+            'test-project': {
+              '[special].md': '# Special chars',
+              'file with spaces.md': '# Spaces',
+              '日本語.md': '# Japanese',
+            },
+          },
+          async (fixture) => {
+            const basePath = join(fixture.path, 'test-project');
+            const files = [
+              createFileInfo(basePath, '[special].md', 'claude-md'),
+              createFileInfo(basePath, 'file with spaces.md', 'claude-md'),
+              createFileInfo(basePath, '日本語.md', 'claude-md'),
+            ];
+            const fileGroups = createFileGroups(files);
 
-        const { lastFrame } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-          />,
+            const { lastFrame } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+              />,
+            );
+
+            const frame = lastFrame();
+            expect(frame).toContain('[special].md');
+            expect(frame).toContain('file with spaces.md');
+            expect(frame).toContain('日本語.md');
+          },
         );
-
-        const frame = lastFrame();
-        expect(frame).toContain('[special].md');
-        expect(frame).toContain('file with spaces.md');
-        expect(frame).toContain('日本語.md');
       });
 
-      test('display very long file paths', () => {
-        const longPath = `${'/very/long/path/'.repeat(10)}CLAUDE.md`;
-        const files = [createMockFile(longPath, 'claude-md')];
-        const fileGroups = createFileGroups(files);
+      test('display very long file paths', async () => {
+        await withTempFixture(
+          {
+            very: {
+              long: {
+                path: {
+                  to: {
+                    nested: {
+                      deeply: {
+                        inside: {
+                          directory: {
+                            structure: {
+                              'CLAUDE.md': '# Deep file',
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          async (fixture) => {
+            const longPath =
+              'very/long/path/to/nested/deeply/inside/directory/structure/CLAUDE.md';
+            const files = [createFileInfo(fixture.path, longPath, 'claude-md')];
+            const fileGroups = createFileGroups(files);
 
-        const { lastFrame } = render(
-          <FileList
-            files={files}
-            fileGroups={fileGroups}
-            onFileSelect={onFileSelect}
-            onToggleGroup={onToggleGroup}
-          />,
+            const { lastFrame } = render(
+              <FileList
+                files={files}
+                fileGroups={fileGroups}
+                onFileSelect={onFileSelect}
+                onToggleGroup={onToggleGroup}
+              />,
+            );
+
+            // File name should be displayed
+            expect(lastFrame()).toContain('CLAUDE.md');
+          },
         );
-
-        // File name should be displayed
-        expect(lastFrame()).toContain('CLAUDE.md');
       });
     });
   });
