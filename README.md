@@ -21,6 +21,9 @@
 
 ## Overview
 
+> [!IMPORTANT]
+> This application was formerly known as **claude-code-explorer**. The npm package [claude-code-explorer](https://www.npmjs.com/package/claude-code-explorer) is the previous version of this tool. The name was changed to **ccexp** for brevity and easier command-line usage.
+
 **ccexp** is a React Ink-based CLI tool that provides an interactive terminal interface for discovering, previewing, and managing Claude Code configuration files and slash commands. Navigate through your codebase to find CLAUDE.md files, slash command definitions, and other Claude-related configurations with a beautiful terminal UI.
 
 ## Features
