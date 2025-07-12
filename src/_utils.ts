@@ -172,15 +172,14 @@ export const analyzeProjectInfo = async (
           }
         }
       } catch (error) {
-        // Log parsing errors in debug mode
-        console.debug(ERROR_MESSAGES.PACKAGE_JSON_PARSE_ERROR, error);
+        // Parsing error occurred, mark as incomplete
         projectInfo = { ...projectInfo, isIncomplete: true };
       }
     }
 
     return projectInfo;
   } catch (error) {
-    console.debug('Failed to analyze project info:', error);
+    // Failed to analyze project info
     return { isIncomplete: true };
   }
 };
