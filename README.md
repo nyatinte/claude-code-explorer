@@ -1,4 +1,4 @@
-# ccexp
+# ccexp (claude-code-explorer)
 
 <div align="center">
   <img src="assets/icon.svg" alt="ccexp Icon" width="128" height="128">
@@ -22,9 +22,9 @@
 ## Overview
 
 > [!IMPORTANT]
-> This application was formerly known as **claude-code-explorer**. The npm package [claude-code-explorer](https://www.npmjs.com/package/claude-code-explorer) is the previous version of this tool. The name was changed to **ccexp** for brevity and easier command-line usage.
+> **ccexp** is the shortened name for **claude-code-explorer**. The npm package [claude-code-explorer](https://www.npmjs.com/package/claude-code-explorer) is the previous version of this tool. The name was shortened to **ccexp** for brevity and easier command-line usage.
 
-**ccexp** is a React Ink-based CLI tool that provides an interactive terminal interface for discovering, previewing, and managing Claude Code configuration files and slash commands. Navigate through your codebase to find CLAUDE.md files, slash command definitions, and other Claude-related configurations with a beautiful terminal UI.
+**ccexp** (short for **claude-code-explorer**) is a React Ink-based CLI tool that provides an interactive terminal interface for discovering, previewing, and managing Claude Code configuration files and slash commands. Navigate through your codebase to find CLAUDE.md files, slash command definitions, and other Claude-related configurations with a beautiful terminal UI.
 
 ## Features
 
@@ -46,7 +46,7 @@
 
 ## Target Files
 
-ccexp automatically discovers these configuration files:
+ccexp (claude-code-explorer) automatically discovers these configuration files:
 
 - **CLAUDE.md** → Project-level configuration (most common)
 - **CLAUDE.local.md** → Local overrides (gitignored)
