@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-**claude-code-explorer** - React Ink-based CLI tool for exploring and managing Claude Code settings and slash commands. The tool provides an interactive terminal UI for file navigation, content preview, and file management operations.
+**ccexp** - React Ink-based CLI tool for exploring and managing Claude Code settings and slash commands. The tool provides an interactive terminal UI for file navigation, content preview, and file management operations.
 
 ## Core Commands
 
@@ -299,7 +299,7 @@ Follow [Semantic Versioning](https://semver.org/):
 Before first release:
 
 1. Add `NPM_TOKEN` to GitHub repository secrets
-2. Verify package name availability: `npm view claude-code-explorer`
+2. Verify package name availability: `npm view ccexp`
 3. Ensure npm account has publishing permissions
 
 See `VERSIONING.md` for detailed versioning strategy and commit message conventions.

@@ -1,5 +1,5 @@
 {
-  "name": "claude-code-explorer",
+  "name": "ccexp",
   "type": "module",
   "version": "1.2.0",
   "description": "CLI tool for exploring and managing Claude Code settings and slash commands",
@@ -7,11 +7,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nyatinte/claude-code-explorer.git"
+    "url": "https://github.com/nyatinte/ccexp.git"
   },
-  "homepage": "https://github.com/nyatinte/claude-code-explorer#readme",
+  "homepage": "https://github.com/nyatinte/ccexp#readme",
   "bugs": {
-    "url": "https://github.com/nyatinte/claude-code-explorer/issues"
+    "url": "https://github.com/nyatinte/ccexp/issues"
   },
   "keywords": [
     "claude",
@@ -27,7 +27,7 @@
     "claude-config",
     "slash-commands",
     "developer-tools",
-    "code-explorer"
+    "ccexp"
   ],
   "engines": {
     "node": ">=20"
