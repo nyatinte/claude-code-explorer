@@ -11,10 +11,10 @@
   <a href="https://www.npmjs.com/package/ccexp">
     <img src="https://img.shields.io/npm/dm/ccexp.svg" alt="npm downloads">
   </a>
-  <a href="https://github.com/nyante/ccexp/blob/main/LICENSE">
+  <a href="https://github.com/nyatinte/ccexp/blob/main/LICENSE">
     <img src="https://img.shields.io/npm/l/ccexp.svg" alt="license">
   </a>
-  <a href="https://github.com/nyante/ccexp">
+  <a href="https://github.com/nyatinte/ccexp">
     <img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="node version">
   </a>
 </div>
