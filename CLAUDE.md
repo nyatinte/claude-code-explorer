@@ -96,13 +96,12 @@ src/
 ├── default-scanner.ts      # Default file scanner implementation
 ├── fast-scanner.ts    # High-performance file scanner
 ├── scan-exclusions.ts # File/directory exclusion patterns
-├── test-*.ts          # Test helpers and utilities
-│   ├── test-setup.ts        # Global test setup
-│   ├── test-utils.ts        # Common test utilities
-│   ├── test-fixture-helpers.ts # fs-fixture utilities
-│   ├── test-keyboard-helpers.ts # Keyboard interaction testing
-│   ├── test-interaction-helpers.ts # UI interaction testing
-│   └── test-navigation.ts   # Navigation test helpers
+├── test-setup.ts      # Global test setup
+├── test-utils.ts      # Common test utilities
+├── test-fixture-helpers.ts # fs-fixture utilities
+├── test-keyboard-helpers.ts # Keyboard interaction testing
+├── test-interaction-helpers.ts # UI interaction testing
+├── test-navigation.ts # Navigation test helpers
 ├── boundary.test.tsx  # Error boundary integration tests
 ├── e2e.test.tsx       # End-to-end tests
 ├── vitest.d.ts        # Vitest type definitions
@@ -190,15 +189,26 @@ src/
 
    ```typescript
    // Base scanner provides common functionality
-   export abstract class BaseFileScanner {
-     constructor(protected basePath: string) {}
-     abstract scan(): Promise<ClaudeFileInfo[]>;
+   export abstract class BaseFileScanner<T> {
+     protected abstract readonly maxFileSize: number;
+     protected abstract readonly fileType: string;
+     
+     async processFile(filePath: string): Promise<T | null> {
+       // Common file processing logic
+     }
+     
+     protected abstract parseContent(
+       filePath: string,
+       content: string,
+       stats: Stats,
+     ): Promise<T | null>;
    }
    
    // Specialized scanners extend base
-   export class ClaudeMdScanner extends BaseFileScanner { }
-   export class SlashCommandScanner extends BaseFileScanner { }
-   export class DefaultScanner extends BaseFileScanner { }
+   class ClaudeMdScanner extends BaseFileScanner<ClaudeFileInfo> {
+     protected readonly maxFileSize = FILE_SIZE_LIMITS.MAX_CLAUDE_MD_SIZE;
+     protected readonly fileType = 'Claude.md';
+   }
    ```
 
 ### Data Flow Architecture
@@ -250,38 +260,44 @@ The project employs a sophisticated testing strategy using `fs-fixture` for crea
 
 ```typescript
 // Example from test-fixture-helpers.ts
-export const createTestFixture = async (structure: DirectoryStructure) => {
-  const fixture = await createFixture(structure);
-  return {
-    fixture,
-    paths: {
-      root: fixture.path,
-      claudeMd: join(fixture.path, 'CLAUDE.md'),
-      localMd: join(fixture.path, 'CLAUDE.local.md'),
-      // ... other paths
-    },
-    cleanup: () => fixture.rm(),
-  };
-};
-```
-
-#### Dependency Injection for Testability
-
-All file scanners support path injection, enabling efficient unit testing without actual file system operations:
-
-```typescript
-// Scanner design with injectable base path
-export class ClaudeMdScanner extends BaseFileScanner {
-  constructor(basePath?: string) {
-    super(basePath ?? process.cwd());
-  }
+export async function withTempFixture<T>(
+  fileTree: FileTree,
+  callback: (fixture: FsFixture) => Promise<T>,
+): Promise<T> {
+  await using fixture = await createFixture(fileTree);
+  return callback(fixture);
 }
 
-// In tests - inject test fixture path
-const { fixture, paths } = await createTestFixture({
-  'CLAUDE.md': '# Test content',
+// Usage example
+await withTempFixture(
+  { 'test.md': '# Test content' },
+  async (fixture) => {
+    const content = await fixture.readFile('test.md', 'utf-8');
+    // Test logic here
+  }
+);
+```
+
+#### Scanner Testing Strategy
+
+File scanners are tested using fs-fixture to create isolated file environments:
+
+```typescript
+// Example from claude-md-scanner.ts tests
+await using fixture = await createClaudeProjectFixture({
+  projectName: 'test-scan',
+  includeLocal: true,
+  includeCommands: true,
 });
-const scanner = new ClaudeMdScanner(paths.root);
+
+const result = await scanClaudeFiles({
+  path: fixture.getPath('test-scan'),
+  recursive: false,
+});
+
+// The scanner internally uses a singleton pattern
+const scanner = new ClaudeMdScanner();
+const fileInfo = await scanner.processFile(filePath);
 ```
 
 #### Test Helper Architecture
@@ -299,9 +315,13 @@ const scanner = new ClaudeMdScanner(paths.root);
 export default defineConfig({
   test: {
     includeSource: ['src/**/*.{js,ts,tsx}'],
+    exclude: ['node_modules'],
     globals: true,
     environment: 'node',
     setupFiles: ['./src/test-setup.ts'],
+  },
+  esbuild: {
+    jsx: 'automatic',
   },
 });
 ```
